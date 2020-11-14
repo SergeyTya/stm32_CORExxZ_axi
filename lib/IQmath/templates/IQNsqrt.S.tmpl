@@ -1,0 +1,166 @@
+//*****************************************************************************
+//
+// IQsqrt.S - Fixed point square root
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// Function:   _IQNsqrt
+//
+//*****************************************************************************
+//
+// C Usage:    extern long _IQNsqrt(long X); // with rounding
+//
+//-----------------------------------------------------------------------------
+//
+// On Entry:   r0    = X in IQ format
+//
+// Regs Used:  r0-r4
+//             r4 is pushed/popped to prevent clobbering.
+//
+// On Exit:    r0    = sqrt(X) result in IQ format
+//             r0    = 0 if input is -ve or 0
+//
+//                      Note: The square root of any number will never
+//                            overflow, hence saturation is not required.
+//
+// Q range:    30 to 1
+//
+//-----------------------------------------------------------------------------
+//
+// Algorithm:  The procedure for calculating "Y = sqrt(X)" is as follows:
+//
+//      Step 1)  Calculate Z = isqrt(X).  See _IQisqrt.S for details.
+//
+//      Step 2)  Calculate Y = sqrt(X) = X*isqrt(X) = Z*x
+//
+//      Step 3) Denormalize result and round
+//
+//##### INTERNAL BEGIN #####
+//-----------------------------------------------------------------------------
+// Benchmark:
+//
+//  Q <= 20, L is even :
+//  Q <= 20, L is odd  :
+//  Q >  20, L is even :
+//  Q >  20, L is odd  :
+//  Negative or Zero   :
+//  Overflow           :
+//
+//##### INTERNAL END #####
+//*****************************************************************************
+__PREAMBLE__
+//*****************************************************************************
+//
+// The isqrt table is used.
+//
+//*****************************************************************************
+    __IMPORT__ isqrt_table
+
+//$ BEGIN_UNROLL _QQ_ 1 to 30
+//*****************************************************************************
+//
+// _IQ_QQ_sqrt
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_sqrt
+    __EXPORT__ _IQ_QQ_sqrt__THUMB_LABEL__
+_IQ_QQ_sqrt__LABEL__
+    //
+    // Normalize Input to (1.0 0.5) in Q32
+    // If the input is zero or negative, bail out early
+    //
+    clz     r3, r0
+    and     r2, r3, #0x1F
+    cbz     r2, sqrt_neg_or_zero_QQ_
+    lsl     r0, r0, r3
+
+    //
+    // Push lr on to the stack so it can be used as temporary space
+    //
+    push    {lr}
+
+    //
+    // Table Lookup for Initial Estimate
+    // Uses  the top 9 actual bits as index
+    // The top bit (#10) is ignored, because it is always one.  This is done
+    // with the -0x800.  (0x200 is 10th bit, shift up two for 4 byte words).
+    //
+    lsr     r2, r0, #(32 - 10)
+    ldr     r1, isqrt_table__QQ_
+    ldr     r1, [r1, r2, lsl #2]
+
+    //
+    // Newton Raphson Iteration  #1
+    // 11-17 Cycles
+    // r0 is Q32, r1 is Q31
+    //
+    umull   lr, r2, r0, r1
+    umull   lr, r2, r2, r1
+    rsb     r2, r2, #0xC0000000
+    umull   lr, r1, r2, r1
+    lsl     r1, r1, #1
+
+    //
+    // Newton Raphson Iteration  #2
+    // 11-17 Cycles
+    //
+    umull   lr, r2, r0, r1
+    umull   lr, r2, r2, r1
+    rsb     r2, r2, #0xC0000000
+    umull   lr, r1, r2, r1
+    lsl     r1, r1, #1
+
+    //
+    // Multiply isqrt(x) by x to get sqrt(x)
+    //
+    umull   lr, r0, r0, r1
+
+    //
+    // Prepare to Denormalize result
+    // r3 stores the necessary shift.
+    //
+    add     r3, r3, #(30 - _QQ_)
+    asrs    r3, r3, #1
+
+    //
+    // Correct by sqrt(2) if carry bit is set
+    // This is due to the normalization to (1.0 0.5) instead of (1.0 0.25)
+    itt     cs
+        ldrcs   r2, sqrt_half__QQ_
+        umullcs r1, r0, r2, r0
+
+    //
+    // Actually denormalize per above preparation
+    // Round result
+    //
+    lsrs    r0, r0, r3
+    adc     r0, r0, #0
+
+    //
+    // Return to the caller.
+    //
+    pop     {pc}
+
+    //
+    // Returns 0 if the input value is negative or zero
+    //
+sqrt_neg_or_zero_QQ___LABEL__
+    mov     r0, #0
+    bx      lr
+
+    //
+    // The literal pool.
+    //
+    __LITERALS__
+isqrt_table__QQ___LABEL__
+    __WORD__ isqrt_table - 0x800
+sqrt_half__QQ___LABEL__
+    __WORD__ 0xb504f334         // sqrt(1/2) in Q32
+
+//$ END_UNROLL _QQ_
+    __END__

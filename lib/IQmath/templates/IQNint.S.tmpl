@@ -1,0 +1,68 @@
+//*****************************************************************************
+//
+// IQint.S - Return integer portion of fixed point number.
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// Function:   _IQNint
+//
+//*****************************************************************************
+//
+// C Usage:    extern long _IQint(long A);   // no round or sat
+//
+//-----------------------------------------------------------------------------
+//
+// On Entry:   r0    = A in IQ format
+//
+// Regs Used:  r0
+//
+// On Exit:    r0    = integer portion of A stored as "long"
+//
+// Q range:    30 to 1
+//
+//-----------------------------------------------------------------------------
+//
+// Algorithm:  The integer portion of the IQ number is calculated
+//             as follows:
+//
+//                integer = A >> q_value;
+//			
+//-----------------------------------------------------------------------------
+//
+// Benchmark:
+//
+// Cycles = 13 (includes LCR/LRETR)
+//
+//*****************************************************************************
+__PREAMBLE__
+//$ BEGIN_UNROLL _QQ_ 1 to 30
+//*****************************************************************************
+//
+// _IQ_QQ_int
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_int
+    __EXPORT__ _IQ_QQ_int__THUMB_LABEL__
+_IQ_QQ_int__LABEL__
+    //
+    // Shift first operand by Q and update sign flags
+    //
+    asrs    r0, r0, #_QQ_
+
+    //
+    // Return to the caller.
+    //
+    bx      lr
+
+    //
+    // Make sure that the end of the section is word aligned.
+    //
+    __ALIGN__
+
+//$ END_UNROLL _QQ_
+    __END__

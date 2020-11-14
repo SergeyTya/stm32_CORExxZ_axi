@@ -1,0 +1,20 @@
+//*****************************************************************************
+//
+// chapters.dox - Chapter listing for the DriverLib User's Guide.
+//
+// Copyright (c) 2006 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+/*! \page chapters
+\latexonly
+\input{intro_chapter}
+\input{using_chapter}
+\input{conversion_chapter}
+\input{arithmetic_chapter}
+\input{trigonometric_chapter}
+\input{mathematical_chapter}
+\input{miscellaneous_chapter}
+\endlatexonly
+*/

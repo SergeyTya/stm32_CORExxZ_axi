@@ -1,0 +1,91 @@
+//*****************************************************************************
+//
+// IQmpyI32frac.S - Find fractional portion of multiplying IQ by I32
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// Function:   _IQNmpyI32frac
+//
+//*****************************************************************************
+//
+// C Usage:    extern long _IQmpyI32frac(long A, long B); // no round or sat
+//
+//-----------------------------------------------------------------------------
+//
+// On Entry:   r0     = A in IQ format
+//             r1     = B in 32-bit integer (long) format
+//
+// Regs Used:
+//
+// On Exit:    r0   = fractional portion of A*B stored as IQ
+//
+// Q range:    30 to 1
+//
+//-----------------------------------------------------------------------------
+//
+// Algorithm:  The fractional portion of the IQ*I32 number is calculated
+//             as follows:
+//
+//    1) Multiply in 32x32->32 mode, and store the sign of the result
+//    2) Strip off bits past Q.  For positive results, we are done.
+//    3) For negative results, check if there is a fractional portion.
+//    4) If there is, subtract one.
+//
+//##### INTERNAL BEGIN #####
+//-----------------------------------------------------------------------------
+// Benchmark:
+//
+// Cycles = ??
+//
+//##### INTERNAL END #####
+//*****************************************************************************
+__PREAMBLE__
+//$ BEGIN_UNROLL _QQ_ 1 to 30
+//*****************************************************************************
+//
+// _IQ_QQ_mpyI32frac
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_mpyI32frac
+    __EXPORT__ _IQ_QQ_mpyI32frac__THUMB_LABEL__
+_IQ_QQ_mpyI32frac__LABEL__
+    //
+    // Perform the multiply in 32x32 -> 32 mode.
+    // This will over flow, but we do not need the upper 32 bits.
+    // Also, the sign of the result is stored in the flags.
+    //
+    muls    r0, r1, r0
+
+    //
+    // Store the sign of the final result in r2.
+    // The case of -.0 is handled as +.0 : Otherwise, it would be come -1.0
+    //
+    ite     mi
+        mvnmi   r2, #0x00000000
+        movpl   r2, #0x00000000
+    lsls    r1, r0, #(32 - _QQ_)
+    it      eq
+        moveq   r2, #0x00000000
+
+    //
+    // Overwrite the Integer bits with the sign information in r2.
+    //
+    bfi     r0, r2, #_QQ_, #(32 - _QQ_)
+
+    //
+    // Return to the caller.
+    //
+    bx      lr
+
+    //
+    // Make sure that the end of the section is word aligned.
+    //
+    __ALIGN__
+
+//$ END_UNROLL _QQ_
+    __END__

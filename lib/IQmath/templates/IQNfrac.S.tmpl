@@ -1,0 +1,75 @@
+//*****************************************************************************
+//
+// IQfrac.S - Return fractional portion of fixed point number.
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// Function:   _IQNfrac
+//
+//*****************************************************************************
+//
+// C Usage:    extern long _IQfrac(long A);   // no round or sat
+//
+//-----------------------------------------------------------------------------
+//
+// On Entry:   r0    = A in IQ format
+//
+// Regs Used:  r0
+//
+// On Exit:    r0    = fractional portion of A stored as IQ
+//
+// Q range:    30 to 1
+//
+//-----------------------------------------------------------------------------
+//
+// Algorithm:  The fractional portion of the IQ number is calculated
+//             as follows:
+//
+//                frac = A - ((A >> q_value) << q_value);
+//
+//##### INTERNAL BEGIN #####
+//-----------------------------------------------------------------------------
+//
+// Benchmark:
+//
+// Cycles = ??
+//
+//##### INTERNAL END #####
+//*****************************************************************************
+__PREAMBLE__
+//$ BEGIN_UNROLL _QQ_ 1 to 30
+//*****************************************************************************
+//
+// _IQ_QQ_frac
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_frac
+    __EXPORT__ _IQ_QQ_frac__THUMB_LABEL__
+_IQ_QQ_frac__LABEL__
+    //
+    // Copy A into r1, shifted by Q (integer portion only)
+    //
+    lsr     r1, r0, #_QQ_
+
+    //
+    // Subtract integer portion renormalized to get fraction
+    //
+    sub     r0, r0, r1, lsl #_QQ_
+
+    //
+    // Return to the caller.
+    //
+    bx      lr
+
+    //
+    // Make sure that the end of the section is word aligned.
+    //
+    __ALIGN__
+
+//$ END_UNROLL _QQ_
+    __END__

@@ -1,0 +1,1121 @@
+//*****************************************************************************
+//
+// IQmathLib.h - IQmath library C language function definitions.
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+#ifndef __IQMATHLIB_H__
+#define __IQMATHLIB_H__
+
+//*****************************************************************************
+//
+// If building with a C++ compiler, make all of the definitions in this header
+// have a C binding.
+//
+//*****************************************************************************
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
+//*****************************************************************************
+//
+// By redefining MATH_TYPE, all IQmath functions will be replaced by their
+// floating point equivalents.
+//
+//*****************************************************************************
+#define FLOAT_MATH              1
+#define IQ_MATH                 0
+#ifndef MATH_TYPE
+#define MATH_TYPE               IQ_MATH
+#endif
+
+//*****************************************************************************
+//
+// The IQ format to be used when the IQ format is not explicitly specified
+// (such as _IQcos instead of _IQ16cos).  This value must be between 1 and 30,
+// inclusive.
+//
+//*****************************************************************************
+#ifndef GLOBAL_Q
+#define GLOBAL_Q                24
+#endif
+
+//*****************************************************************************
+//
+// Include some standard headers, as required based on the math type.
+//
+//*****************************************************************************
+#if MATH_TYPE == FLOAT_MATH
+#include <math.h>
+#endif
+#include <limits.h>
+#include <stdlib.h>
+
+//*****************************************************************************
+//
+// Various Useful Constant Definitions:
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define Q_QQ_                     _QQ_
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define Q_QQ_                      _QQ_
+//$ END_UNROLL _QQ_
+#define QG                      GLOBAL_Q
+
+#define MAX_IQ_POS              LONG_MAX
+#define MAX_IQ_NEG              LONG_MIN
+#define MIN_IQ_POS              1
+#define MIN_IQ_NEG              -1
+
+//*****************************************************************************
+//
+// See if IQmath or floating point is being used.
+//
+//*****************************************************************************
+#if MATH_TYPE == IQ_MATH
+
+//*****************************************************************************
+//
+// The types for the various IQ formats.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+typedef long _iq_QQ_;
+//$ END_UNROLL _QQ_
+typedef long _iq;
+
+//*****************************************************************************
+//
+// Simple multiplies or divides, which are accomplished with simple shifts.
+//
+//*****************************************************************************
+#define _IQmpy2(A)              ((A) << 1)
+#define _IQmpy4(A)              ((A) << 2)
+#define _IQmpy8(A)              ((A) << 3)
+#define _IQmpy16(A)             ((A) << 4)
+#define _IQmpy32(A)             ((A) << 5)
+#define _IQmpy64(A)             ((A) << 6)
+#define _IQdiv2(A)              ((A) >> 1)
+#define _IQdiv4(A)              ((A) >> 2)
+#define _IQdiv8(A)              ((A) >> 3)
+#define _IQdiv16(A)             ((A) >> 4)
+#define _IQdiv32(A)             ((A) >> 5)
+#define _IQdiv64(A)             ((A) >> 6)
+
+//*****************************************************************************
+//
+// Convert a value into an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_(A)                ((_iq_QQ_)((A) * (1 << _QQ_)))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_(A)                 ((_iq_QQ_)((A) * (1 << _QQ_)))
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQ(A)                  _IQ_QQ_(A)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Convert an IQ number to a floating point value.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern float _IQ_QQ_toF(_iq_QQ_ A);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQtoF(A)               _IQ_QQ_toF(A)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Convert an IQ number to a double-precision floating point value.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern double _IQ_QQ_toD(_iq_QQ_ A);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQtoD(A)               _IQ_QQ_toD(A)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Saturates an IQ number in a given range.
+//
+//*****************************************************************************
+#define _IQsat(A, Pos, Neg)     (((A) > (Pos)) ?                              \
+                                 (Pos) :                                      \
+                                 (((A) < (Neg)) ? (Neg) : (A)))
+
+//*****************************************************************************
+//
+// Converts an IQ number between the global IQ format and a specified IQ
+// format.
+//
+//*****************************************************************************
+#define _IQtoIQ30(A)            ((_iq30)(A) << (30 - GLOBAL_Q))
+#define _IQ30toIQ(A)            ((_iq30)(A) >> (30 - GLOBAL_Q))
+
+//$ BEGIN_UNROLL _QQ_ 29 to 10
+#if (GLOBAL_Q >= _QQ_)
+#define _IQtoIQ_QQ_(A)            ((_iq_QQ_)(A) >> (GLOBAL_Q - _QQ_))
+#define _IQ_QQ_toIQ(A)            ((_iq_QQ_)(A) << (GLOBAL_Q - _QQ_))
+#else
+#define _IQtoIQ_QQ_(A)            ((_iq_QQ_)(A) << (_QQ_ - GLOBAL_Q))
+#define _IQ_QQ_toIQ(A)            ((_iq_QQ_)(A) >> (_QQ_ - GLOBAL_Q))
+#endif
+
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 2
+#if (GLOBAL_Q >= _QQ_)
+#define _IQtoIQ_QQ_(A)             ((_iq_QQ_)(A) >> (GLOBAL_Q - _QQ_))
+#define _IQ_QQ_toIQ(A)             ((_iq_QQ_)(A) << (GLOBAL_Q - _QQ_))
+#else
+#define _IQtoIQ_QQ_(A)             ((_iq_QQ_)(A) << (_QQ_ - GLOBAL_Q))
+#define _IQ_QQ_toIQ(A)             ((_iq_QQ_)(A) >> (_QQ_ - GLOBAL_Q))
+#endif
+
+//$ END_UNROLL _QQ_
+#define _IQtoIQ1(A)             ((_iq1)(A) >> (GLOBAL_Q - 1))
+#define _IQ1toIQ(A)             ((_iq1)(A) << (GLOBAL_Q - 1))
+
+//*****************************************************************************
+//
+// Converts a number between IQ format and 16-bit Qn format.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 15 to 10
+#if (GLOBAL_Q >= _QQ_)
+#define _IQtoQ_QQ_(A)             ((long)(A) >> (GLOBAL_Q - _QQ_))
+#define _Q_QQ_toIQ(A)             ((_iq_QQ_)(A) << (GLOBAL_Q - _QQ_))
+#else
+#define _IQtoQ_QQ_(A)             ((long)(A) << (_QQ_ - GLOBAL_Q))
+#define _Q_QQ_toIQ(A)             ((_iq_QQ_)(A) >> (_QQ_ - GLOBAL_Q))
+#endif
+
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 2
+#if (GLOBAL_Q >= _QQ_)
+#define _IQtoQ_QQ_(A)              ((long)(A) >> (GLOBAL_Q - _QQ_))
+#define _Q_QQ_toIQ(A)              ((_iq_QQ_)(A) << (GLOBAL_Q - _QQ_))
+#else
+#define _IQtoQ_QQ_(A)              ((long)(A) << (_QQ_ - GLOBAL_Q))
+#define _Q_QQ_toIQ(A)              ((_iq_QQ_)(A) >> (_QQ_ - GLOBAL_Q))
+#endif
+
+//$ END_UNROLL _QQ_
+#define _IQtoQ1(A)              ((long)(A) >> (GLOBAL_Q - 1))
+#define _Q1toIQ(A)              ((_iq1)(A) << (GLOBAL_Q - 1))
+
+//*****************************************************************************
+//
+// Multiplies two IQ numbers.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_mpy(_iq_QQ_ A, _iq_QQ_ B);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQmpy(A, B)            _IQ_QQ_mpy(A, B)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Multiplies two IQ numbers, with rounding.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_rmpy(_iq_QQ_ A, _iq_QQ_ B);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQrmpy(A, B)           _IQ_QQ_rmpy(A, B)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Multiplies two IQ numbers, with rounding and saturation.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_rsmpy(_iq_QQ_ A, _iq_QQ_ B);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQrsmpy(A, B)          _IQ_QQ_rsmpy(A, B)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Divides two IQ numbers.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_div(_iq_QQ_ A, _iq_QQ_ B);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQdiv(A, B)            _IQ_QQ_div(A, B)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Computes the sin of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 29 to 1
+extern _iq_QQ_ _IQ_QQ_sin(_iq_QQ_ A);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 29 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQsin(A)               _IQ_QQ_sin(A)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Computes the sin of an IQ number, using cycles per unit instead of radians.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_sinPU(_iq_QQ_ A);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQsinPU(A)             _IQ_QQ_sinPU(A)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Computes the arcsin of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 29 to 1
+extern _iq_QQ_ _IQ_QQ_asin(_iq_QQ_ A);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 29 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQasin(A)              _IQ_QQ_asin(A)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Computes the cos of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 29 to 1
+extern _iq_QQ_ _IQ_QQ_cos(_iq_QQ_ A);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 29 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQcos(A)               _IQ_QQ_cos(A)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Computes the cos of an IQ number, using cycles per unit instead of radians.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_cosPU(_iq_QQ_ A);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQcosPU(A)             _IQ_QQ_cosPU(A)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Computes the arccos of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 29 to 10
+#define _IQ_QQ_acos(A)            (_IQ_QQ_(1.570796327) - _IQ_QQ_asin(A))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_acos(A)             (_IQ_QQ_(1.570796327) - _IQ_QQ_asin(A))
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 29 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQacos(A)              _IQ_QQ_acos(A)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Computes the arctan of a coordinate specified by two IQ numbers.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 29 to 1
+extern _iq_QQ_ _IQ_QQ_atan2(_iq_QQ_ A, _iq_QQ_ B);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 29 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQatan2(A, B)          _IQ_QQ_atan2(A, B)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Computes the arctan of a coordinate specified by two IQ numbers, returning
+// the value in cycles per unit instead of radians.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_atan2PU(_iq_QQ_ A, _iq_QQ_ B);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQatan2PU(A, B)        _IQ_QQ_atan2PU(A, B)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Computes the arctan of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 29 to 10
+#define _IQ_QQ_atan(A)            _IQ_QQ_atan2(A, _IQ_QQ_(1.0))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_atan(A)             _IQ_QQ_atan2(A, _IQ_QQ_(1.0))
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 29 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQatan(A)              _IQ_QQ_atan2(A, _IQ_QQ_(1.0))
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Computes the square root of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_sqrt(_iq_QQ_ A);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQsqrt(A)              _IQ_QQ_sqrt(A)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Computes 1 over the square root of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_isqrt(_iq_QQ_ A);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQisqrt(A)             _IQ_QQ_isqrt(A)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Computes e^x of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_exp(_iq_QQ_ A);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQexp(A)               _IQ_QQ_exp(A)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Computes 2^x of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_exp2(_iq_QQ_ A);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQexp2(A)              _IQ_QQ_exp2(A)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Returns the integer portion of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_int(A)             ((A) >> _QQ_)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_int(A)              ((A) >> _QQ_)
+//$ END_UNROLL _QQ_
+#define _IQint(A)               ((A) >> GLOBAL_Q)
+
+//*****************************************************************************
+//
+// Computes the fractional portion of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_frac(_iq_QQ_ A);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQfrac(A)              _IQ_QQ_frac(A)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Multiplies two IQ numbers in the specified iQ formats, returning the result
+// in another IQ format.
+//
+//*****************************************************************************
+extern long __IQxmpy(long A, long B, long S);
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_mpyIQX(A, IQA, B, IQB) __IQxmpy(A, B, _QQ_ + 32 - (IQA) - (IQB))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_mpyIQX(A, IQA, B, IQB)  __IQxmpy(A, B, _QQ_ + 32 - (IQA) - (IQB))
+//$ END_UNROLL _QQ_
+#define _IQmpyIQX(A, IQA, B, IQB)   __IQxmpy(A, B,                            \
+                                             (GLOBAL_Q) + 32 - (IQA) - (IQB))
+
+//*****************************************************************************
+//
+// Multiplies an IQ number by an integer.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_mpyI32(A, B)       ((A) * (B))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_mpyI32(A, B)        ((A) * (B))
+//$ END_UNROLL _QQ_
+#define _IQmpyI32(A, B)         ((A) * (B))
+
+//*****************************************************************************
+//
+// Multiplies an IQ number by an integer, and returns the integer portion.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_mpyI32int(_iq_QQ_ A, long B);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQmpyI32int(A, B)      _IQ_QQ_mpyI32int(A, B)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Multiplies an IQ number by an integer, and returns the fractional portion.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_mpyI32frac(_iq_QQ_ A, long B);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQmpyI32frac(A, B)     _IQ_QQ_mpyI32frac(A, B)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Computes the square root of A^2 + B^2 using IQ numbers.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+extern _iq_QQ_ _IQ_QQ_mag(_iq_QQ_ A, _iq_QQ_ B);
+//$ END_UNROLL _QQ_
+
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+#if GLOBAL_Q == _QQ_
+#define _IQmag(A, B)            _IQ_QQ_mag(A, B)
+#endif
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Converts a string into an IQ number.
+//
+//*****************************************************************************
+extern _iq _atoIQN(const char *A, long B);
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _atoIQ_QQ_(A)             _atoIQN(A, _QQ_)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _atoIQ_QQ_(A)              _atoIQN(A, _QQ_)
+//$ END_UNROLL _QQ_
+#define _atoIQ(A)               _atoIQN(A, GLOBAL_Q)
+
+//*****************************************************************************
+//
+// Converts an IQ number into a string.
+//
+//*****************************************************************************
+extern int __IQNtoa(char *A, const char *B, _iq C, int D);
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_toa(A, B, C)       __IQNtoa(A, B, C, _QQ_);
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_toa(A, B, C)        __IQNtoa(A, B, C, _QQ_);
+//$ END_UNROLL _QQ_
+#define _IQtoa(A, B, C)         __IQNtoa(A, B, C, GLOBAL_Q)
+
+//*****************************************************************************
+//
+// Computes the absolute value of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_abs(A)             (((A) < 0) ? - (A) : (A))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_abs(A)              (((A) < 0) ? - (A) : (A))
+//$ END_UNROLL _QQ_
+#define _IQabs(A)               (((A) < 0) ? - (A) : (A))
+
+//*****************************************************************************
+//
+// Otherwise, floating point math is being used.
+//
+//*****************************************************************************
+#else // MATH_TYPE == FLOAT_MATH
+
+//*****************************************************************************
+//
+// The floating point equivalent of the various IQ formats.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 1
+typedef float _iq_QQ_;
+//$ END_UNROLL _QQ_
+typedef float _iq;
+
+//*****************************************************************************
+//
+// Simple multiplies or divides.
+//
+//*****************************************************************************
+#define _IQmpy2(A)              ((A) * 2.0)
+#define _IQmpy4(A)              ((A) * 4.0)
+#define _IQmpy8(A)              ((A) * 8.0)
+#define _IQmpy16(A)             ((A) * 16.0)
+#define _IQmpy32(A)             ((A) * 32.0)
+#define _IQmpy64(A)             ((A) * 64.0)
+#define _IQdiv2(A)              ((A) / 2.0)
+#define _IQdiv4(A)              ((A) / 4.0)
+#define _IQdiv8(A)              ((A) / 8.0)
+#define _IQdiv16(A)             ((A) / 16.0)
+#define _IQdiv32(A)             ((A) / 32.0)
+#define _IQdiv64(A)             ((A) / 64.0)
+
+//*****************************************************************************
+//
+// Convert a value into an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_(A)                (A)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_(A)                 (A)
+//$ END_UNROLL _QQ_
+#define _IQ(A)                  (A)
+
+//*****************************************************************************
+//
+// Convert an IQ number to a floating point value.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_toF(A)             (A)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_toF(A)              (A)
+//$ END_UNROLL _QQ_
+#define _IQtoF(A)               (A)
+
+//*****************************************************************************
+//
+// Convert an IQ number to a double-precision floating point value.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_toD(A)             (A)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_toD(A)              (A)
+//$ END_UNROLL _QQ_
+#define _IQtoD(A)               (A)
+
+//*****************************************************************************
+//
+// Saturates an IQ number in a given range.
+//
+//*****************************************************************************
+#define _IQsat(A, Pos, Neg)     (((A) > (Pos)) ?                              \
+                                 (Pos) :                                      \
+                                 (((A) < (Neg)) ? (Neg) : (A)))
+
+//*****************************************************************************
+//
+// Converts an IQ number between the global IQ format and a specified IQ
+// format.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQtoIQ_QQ_(A)            (A)
+#define _IQ_QQ_toIQ(A)            (A)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQtoIQ_QQ_(A)             (A)
+#define _IQ_QQ_toIQ(A)             (A)
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Converts a number between IQ format and 16-bit Qn format.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 15 to 10
+#define _IQtoQ_QQ_(A)             ((short)((long)((A) * (1 << _QQ_))))
+#define _Q_QQ_toIQ(A)             (((float)(A)) * (1.0 / (1 << _QQ_)))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQtoQ_QQ_(A)              ((short)((long)((A) * (1 << _QQ_))))
+#define _Q_QQ_toIQ(A)              (((float)(A)) * (1.0 / (1 << _QQ_)))
+//$ END_UNROLL _QQ_
+
+//*****************************************************************************
+//
+// Multiplies two IQ numbers.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_mpy(A, B)          ((A) * (B))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_mpy(A, B)           ((A) * (B))
+//$ END_UNROLL _QQ_
+#define _IQmpy(A, B)            ((A) * (B))
+
+//*****************************************************************************
+//
+// Multiplies two IQ numbers, with rounding.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_rmpy(A, B)         ((A) * (B))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_rmpy(A, B)          ((A) * (B))
+//$ END_UNROLL _QQ_
+#define _IQrmpy(A, B)           ((A) * (B))
+
+//*****************************************************************************
+//
+// Multiplies two IQ numbers, with rounding and saturation.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_rsmpy(A, B)        ((A) * (B))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_rsmpy(A, B)         ((A) * (B))
+//$ END_UNROLL _QQ_
+#define _IQrsmpy(A, B)          ((A) * (B))
+
+//*****************************************************************************
+//
+// Divides two IQ numbers.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_div(A, B)          ((A) / (B))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_div(A, B)           ((A) / (B))
+//$ END_UNROLL _QQ_
+#define _IQdiv(A, B)            ((A) / (B))
+
+//*****************************************************************************
+//
+// Computes the sin of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 29 to 10
+#define _IQ_QQ_sin(A)             sin(A)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_sin(A)              sin(A)
+//$ END_UNROLL _QQ_
+#define _IQsin(A)               sin(A)
+
+//*****************************************************************************
+//
+// Computes the sin of an IQ number, using cycles per unit instead of radians.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_sinPU(A)           sin((A) * 6.283185307)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_sinPU(A)            sin((A) * 6.283185307)
+//$ END_UNROLL _QQ_
+#define _IQsinPU(A)             sin((A) * 6.283185307)
+
+//*****************************************************************************
+//
+// Computes the arcsin of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 29 to 10
+#define _IQ_QQ_asin(A)            asin(A)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_asin(A)             asin(A)
+//$ END_UNROLL _QQ_
+#define _IQasin(A)              asin(A)
+
+//*****************************************************************************
+//
+// Computes the cos of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 29 to 10
+#define _IQ_QQ_cos(A)             cos(A)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_cos(A)              cos(A)
+//$ END_UNROLL _QQ_
+#define _IQcos(A)               cos(A)
+
+//*****************************************************************************
+//
+// Computes the cos of an IQ number, using cycles per unit instead of radians.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_cosPU(A)           cos((A) * 6.283185307)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_cosPU(A)            cos((A) * 6.283185307)
+//$ END_UNROLL _QQ_
+#define _IQcosPU(A)             cos((A) * 6.283185307)
+
+//*****************************************************************************
+//
+// Computes the arccos of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 29 to 10
+#define _IQ_QQ_acos(A)            acos(A)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_acos(A)             acos(A)
+//$ END_UNROLL _QQ_
+#define _IQacos(A)              acos(A)
+
+//*****************************************************************************
+//
+// Computes the arctan of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 29 to 10
+#define _IQ_QQ_atan(A)            atan(A)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_atan(A)             atan(A)
+//$ END_UNROLL _QQ_
+#define _IQatan(A)              atan(A)
+
+//*****************************************************************************
+//
+// Computes the arctan of a coordinate specified by two IQ numbers.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_atan2(A, B)        atan2(A, B)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_atan2(A, B)         atan2(A, B)
+//$ END_UNROLL _QQ_
+#define _IQatan2(A, B)          atan2(A, B)
+
+//*****************************************************************************
+//
+// Computes the arctan of a coordinate specified by two IQ numbers, returning
+// the value in cycles per unit instead of radians.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_atan2PU(A, B)      (((atan2(A, B) * (1.0 / 6.283185307)) >=      \
+                                  0.0) ?                                      \
+                                 (atan2(A, B) * (1.0 / 6.283185307)) :        \
+                                 (atan2(A, B) * (1.0 / 6.283185307) + 1.0))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_atan2PU(A, B)       (((atan2(A, B) * (1.0 / 6.283185307)) >=      \
+                                  0.0) ?                                      \
+                                 (atan2(A, B) * (1.0 / 6.283185307)) :        \
+                                 (atan2(A, B) * (1.0 / 6.283185307) + 1.0))
+//$ END_UNROLL _QQ_
+#define _IQatan2PU(A, B)        (((atan2(A, B) * (1.0 / 6.283185307)) >=      \
+                                  0.0) ?                                      \
+                                 (atan2(A, B) * (1.0 / 6.283185307)) :        \
+                                 (atan2(A, B) * (1.0 / 6.283185307) + 1.0))
+
+//*****************************************************************************
+//
+// Computes the square root of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_sqrt(A)            sqrt(A)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_sqrt(A)             sqrt(A)
+//$ END_UNROLL _QQ_
+#define _IQsqrt(A)              sqrt(A)
+
+//*****************************************************************************
+//
+// Computes 1 over the square root of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_isqrt(A)           (1.0 / sqrt(A))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_isqrt(A)            (1.0 / sqrt(A))
+//$ END_UNROLL _QQ_
+#define _IQisqrt(A)             (1.0 / sqrt(A))
+
+//*****************************************************************************
+//
+// Computes e^x of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_exp(A)             exp(A)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_exp(A)              exp(A)
+//$ END_UNROLL _QQ_
+#define _IQexp(A)               exp(A)
+
+//*****************************************************************************
+//
+// Computes 2^x of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_exp2(A)            exp2(A)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_exp2(A)             exp2(A)
+//$ END_UNROLL _QQ_
+#define _IQexp2(A)              exp2(A)
+
+//*****************************************************************************
+//
+// Returns the integer portion of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_int(A)             ((long)(A))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_int(A)              ((long)(A))
+//$ END_UNROLL _QQ_
+#define _IQint(A)               ((long)(A))
+
+//*****************************************************************************
+//
+// Computes the fractional portion of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_frac(A)            ((A) - (float)((long)(A)))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_frac(A)             ((A) - (float)((long)(A)))
+//$ END_UNROLL _QQ_
+#define _IQfrac(A)              ((A) - (float)((long)(A)))
+
+//*****************************************************************************
+//
+// Multiplies two IQ numbers in the specified IQ formats, returning the result
+// in another IQ format.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_mpyIQX(A, IQA, B, IQB) ((A) * (B))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_mpyIQX(A, IQA, B, IQB)  ((A) * (B))
+//$ END_UNROLL _QQ_
+#define _IQmpyIQX(A, IQA, B, IQB)   ((A) * (B))
+
+//*****************************************************************************
+//
+// Multiplies an IQ number by an integer.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_mpyI32(A, B)       ((A) * (float)(B))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_mpyI32(A, B)        ((A) * (float)(B))
+//$ END_UNROLL _QQ_
+#define _IQmpyI32(A, B)         ((A) * (float)(B))
+
+//*****************************************************************************
+//
+// Multiplies an IQ number by an integer, and returns the integer portion.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_mpyI32int(A, B)    ((long)((A) * (float)(B)))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_mpyI32int(A, B)     ((long)((A) * (float)(B)))
+//$ END_UNROLL _QQ_
+#define _IQmpyI32int(A, B)      ((long)((A) * (float)(B)))
+
+//*****************************************************************************
+//
+// Multiplies an IQ number by an integer, and returns the fractional portion.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_mpyI32frac(A, B)   (((A) * (B)) -                                \
+                                 (float)((long)((A) * (float)(B))))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_mpyI32frac(A, B)    (((A) * (B)) -                                \
+                                 (float)((long)((A) * (float)(B))))
+//$ END_UNROLL _QQ_
+#define _IQmpyI32frac(A, B)     (((A) * (B)) -                                \
+                                 (float)((long)((A) * (float)(B))))
+
+//*****************************************************************************
+//
+// Computes the square root of A^2 + B^2 using IQ numbers.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_mag(A, B)          sqrt(((A) * (A)) + ((B) * (B)))
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_mag(A, B)           sqrt(((A) * (A)) + ((B) * (B)))
+//$ END_UNROLL _QQ_
+#define _IQmag(A, B)            sqrt(((A) * (A)) + ((B) * (B)))
+
+//*****************************************************************************
+//
+// Converts a string into an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _atoIQ_QQ_(A)             atof(A)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _atoIQ_QQ_(A)              atof(A)
+//$ END_UNROLL _QQ_
+#define _atoIQ(A)               atof(A)
+
+//*****************************************************************************
+//
+// Converts an IQ number into a string.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_toa(A, B, C)       sprintf(A, B, C)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_toa(A, B, C)        sprintf(A, B, C)
+//$ END_UNROLL _QQ_
+#define _IQtoa(A, B, C)         sprintf(A, B, C)
+
+//*****************************************************************************
+//
+// Computes the absolute value of an IQ number.
+//
+//*****************************************************************************
+//$ BEGIN_UNROLL _QQ_ 30 to 10
+#define _IQ_QQ_abs(A)             fabs(A)
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 9 to 1
+#define _IQ_QQ_abs(A)              fabs(A)
+//$ END_UNROLL _QQ_
+#define _IQabs(A)               fabs(A)
+
+#endif // MATH_TYPE == IQ_MATH
+
+//*****************************************************************************
+//
+// Mark the end of the C bindings section for C++ compilers.
+//
+//*****************************************************************************
+#ifdef __cplusplus
+}
+#endif
+
+#endif // __IQMATHLIB_H__

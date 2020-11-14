@@ -1,0 +1,152 @@
+//*****************************************************************************
+//
+// miscellaneous.dox - Doxygen documentation for the IQmath miscellaneous
+//                     functions.
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+/*! \page miscellaneous_chapter
+\latexonly
+\chapter{Miscellaneous Functions}
+\jumptext{miscellaneous_intro}{Introduction}\\
+\jumptext{group__miscellaneous__api}{API Functions}
+\input{miscellaneous_intro}
+\input{group__miscellaneous__api}
+\endlatexonly
+*/
+
+/*! \page miscellaneous_intro Introduction
+The miscellaneous functions are useful functions that do not otherwise fit
+elsewhere.  The following table summarizes the miscellaneous functions:
+
+\latexonly
+\arrayrulewidth=1pt
+\begin{longtable}{|@{}c@{}|@{}c@{}|@{}c@{}|@{}c@{}|@{}c@{}|@{\hspace{0.2em}}c@{\hspace{0.2em}}|@{\hspace{0.2em}}c@{\hspace{0.2em}}|}
+\hline
+\textbf{\begin{tabular}{c}Function\\Name\end{tabular}}&
+\textbf{\begin{tabular}{c}IQ\\Format\end{tabular}}&
+\textbf{\begin{tabular}{c}Execution\\Cycles\end{tabular}}&
+\textbf{\begin{tabular}{c}Accuracy\\(bits)\end{tabular}}&
+\textbf{\begin{tabular}{c}Program\\Memory\\(bytes)\end{tabular}}&
+\textbf{\begin{tabular}{c}Input\\Format\end{tabular}}&
+\textbf{\begin{tabular}{c}Output\\Format\end{tabular}}\\
+% Function                                              IQ     cyc  accuracy  byte input output
+\hline
+\hyperlink{group__miscellaneous__api_iqnabs}{\_IQNabs} & 1-30 & ~3 & 32 bits &  6 & IQN & IQN \\
+\hline
+\hyperlink{group__miscellaneous__api_iqnsat}{\_IQNsat} & 1-30 & ~6 & 32 bits & 14 & IQN & IQN \\
+\hline
+\end{longtable}
+\endlatexonly
+
+- The number of execution cycles and program memory usage provided above
+  assumes IQ24 format.  Execution cycles may vary by a few cycles for other IQ
+  formats, and program memory usage may vary by a few bytes for other IQ
+  formats.
+
+- The number of execution cycles provided in the table includes the call and
+  return and assumes that the IQmath library is running from internal flash.
+
+- Accuracy should always be tested and verified within the end application.
+*/
+
+/*! \defgroup miscellaneous_api API Functions
+\latexonly
+%******************************************************************************
+%
+% The documentation for the _IQabs function.
+%
+%******************************************************************************
+\hypertarget{group__miscellaneous__api_iqnabs}{
+\subsection[_IQNabs]{\_IQNabs}}
+\label{group__miscellaneous__api_iqnabs}
+
+Finds the absolute value of an IQ number.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNabs(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQabs(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input value in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the absolute value of the input IQ number.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the absolute value of the input.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQsat function.
+%
+%******************************************************************************
+\hypertarget{group__miscellaneous__api_iqnsat}{
+\subsection[_IQNsat]{\_IQNsat}}
+\label{group__miscellaneous__api_iqnsat}
+
+Satures an IQ number.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNsat(\hyperlink{using_type}{\_iqN} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iqN} Pos,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iqN} Neg)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQsat(\hyperlink{using_type}{\_iq} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iq} Pos,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iq} Neg)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input value in IQ format.
+\item[{\em Pos}] is the positive limit in IQ format.
+\item[{\em Neg}] is the negative limit in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function limits the input IQ number between the range specified by the
+positive and negative limits.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the saturated input value.
+\end{Desc}
+
+\endlatexonly
+*/

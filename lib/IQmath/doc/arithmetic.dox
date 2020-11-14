@@ -1,0 +1,914 @@
+//*****************************************************************************
+//
+// arithmetic.dox - Doxygen documentation for the IQmath arithmetic functions.
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+/*! \page arithmetic_chapter
+\latexonly
+\chapter{Arithmetic Functions}
+\jumptext{arithmetic_intro}{Introduction}\\
+\jumptext{group__arithmetic__api}{API Functions}
+\input{arithmetic_intro}
+\input{group__arithmetic__api}
+\endlatexonly
+*/
+
+/*! \page arithmetic_intro Introduction
+The arithmetic functions provide basic arithmetic (addition, subtraction,
+multiplication, division) of IQ numbers.  No special functions are required for
+addition or subtraction; IQ numbers can simply be added and subtracted using
+the underlying C addition and subtraction operators.  Multiplication and
+division require special treatment in order to maintain the IQ number of the
+result.  The following table summarizes the arithmetic functions:
+
+\latexonly
+\arrayrulewidth=1pt
+\begin{longtable}{|@{\hspace{0.2em}}c@{\hspace{0.2em}}|@{}c@{}|@{}c@{}|@{}c@{}|@{}c@{}|@{}c@{}|@{}c@{}|}
+\hline
+\textbf{\begin{tabular}{c}Function\\Name\end{tabular}}&
+\textbf{\begin{tabular}{c}IQ\\Format\end{tabular}}&
+\textbf{\begin{tabular}{c}Execution\\Cycles\end{tabular}}&
+\textbf{\begin{tabular}{c}Accuracy\\(bits)\end{tabular}}&
+\textbf{\begin{tabular}{c}Program\\Memory\\(bytes)\end{tabular}}&
+\textbf{\begin{tabular}{c}Input\\Format\end{tabular}}&
+\textbf{\begin{tabular}{c}Output\\Format\end{tabular}}\\
+% Function                                                         IQ     cyc  accuracy  bytes input      output
+\hline
+\hyperlink{group__arithmetic__api_iqdiv2}{\_IQdiv2}               & 1-30 & ~1 & 32 bits &   2 &      IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqdiv4}{\_IQdiv4}               & 1-30 & ~1 & 32 bits &   2 &      IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqdiv8}{\_IQdiv8}               & 1-30 & ~1 & 32 bits &   2 &      IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqdiv16}{\_IQdiv16}             & 1-30 & ~1 & 32 bits &   2 &      IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqdiv32}{\_IQdiv32}             & 1-30 & ~1 & 32 bits &   2 &      IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqdiv64}{\_IQdiv64}             & 1-30 & ~1 & 32 bits &   2 &      IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqmpy2}{\_IQmpy2}               & 1-30 & ~1 & 32 bits &   2 &      IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqmpy4}{\_IQmpy4}               & 1-30 & ~1 & 32 bits &   2 &      IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqmpy8}{\_IQmpy8}               & 1-30 & ~1 & 32 bits &   2 &      IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqmpy16}{\_IQmpy16}             & 1-30 & ~1 & 32 bits &   2 &      IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqmpy32}{\_IQmpy32}             & 1-30 & ~1 & 32 bits &   2 &      IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqmpy64}{\_IQmpy64}             & 1-30 & ~1 & 32 bits &   2 &      IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqndiv}{\_IQNdiv}               & 1-30 & 59 & 32 bits & 144 &  IQN/IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqnmpy}{\_IQNmpy}               & 1-30 & 13 & 32 bits &  16 &  IQN*IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqnmpyi32}{\_IQNmpyI32}         & 1-30 & ~1 & 32 bits &   2 & IQN*long & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqnmpyi32frac}{\_IQNmpyI32frac} & 1-30 & 14 & 32 bits &  20 & IQN*long & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqnmpyi32int}{\_IQNmpyI32int}   & 1-30 & 17 & 32 bits &  20 & IQN*long & long \\
+\hline
+\hyperlink{group__arithmetic__api_iqnmpyiqx}{\_IQNmpyIQX}         & 1-30 & 20 & 32 bits &  52 &  IQN*IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqnrmpy}{\_IQNrmpy}             & 1-30 & 13 & 32 bits &  12 &  IQN*IQN & IQN  \\
+\hline
+\hyperlink{group__arithmetic__api_iqnrsmpy}{\_IQNrsmpy}           & 1-30 & 17 & 32 bits &  36 &  IQN*IQN & IQN  \\
+\hline
+\end{longtable}
+\endlatexonly
+
+- The number of execution cycles and program memory usage provided above
+  assumes IQ24 format.  Execution cycles may vary by a few cycles for other IQ
+  formats, and program memory usage may vary by a few bytes for other IQ
+  formats.
+
+- The number of execution cycles provided in the table includes the call and
+  return and assumes that the IQmath library is running from internal flash.
+
+- Accuracy should always be tested and verified within the end application.
+*/
+
+/*! \defgroup arithmetic_api API Functions
+\latexonly
+%******************************************************************************
+%
+% The documentation for the _IQdiv2 function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqdiv2}{
+\subsection[_IQdiv2]{\_IQdiv2}}
+\label{group__arithmetic__api_iqdiv2}
+
+Divides an IQ number by two.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQdiv2(\hyperlink{using_type}{\_iqN} A)}
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the number to be divided, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function divides an IQ number by two.  This will work for any IQ format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the number divided by two.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQdiv4 function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqdiv4}{
+\subsection[_IQdiv4]{\_IQdiv4}}
+\label{group__arithmetic__api_iqdiv4}
+
+Divides an IQ number by four.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQdiv4(\hyperlink{using_type}{\_iqN} A)}
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the number to be divided, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function divides an IQ number by four.  This will work for any IQ format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the number divided by four.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQdiv8 function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqdiv8}{
+\subsection[_IQdiv8]{\_IQdiv8}}
+\label{group__arithmetic__api_iqdiv8}
+
+Divides an IQ number by eight.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQdiv8(\hyperlink{using_type}{\_iqN} A)}
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the number to be divided, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function divides an IQ number by eight.  This will work for any IQ format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the number divided by eight.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQdiv16 function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqdiv16}{
+\subsection[_IQdiv16]{\_IQdiv16}}
+\label{group__arithmetic__api_iqdiv16}
+
+Divides an IQ number by sixteen.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQdiv16(\hyperlink{using_type}{\_iqN} A)}
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the number to be divided, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function divides an IQ number by sixteen.  This will work for any IQ
+format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the number divided by sixteen.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQdiv32 function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqdiv32}{
+\subsection[_IQdiv32]{\_IQdiv32}}
+\label{group__arithmetic__api_iqdiv32}
+
+Divides an IQ number by thirty two.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQdiv32(\hyperlink{using_type}{\_iqN} A)}
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the number to be divided, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function divides an IQ number by thirty two.  This will work for any IQ
+format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the number divided by thirty two.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQdiv64 function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqdiv64}{
+\subsection[_IQdiv64]{\_IQdiv64}}
+\label{group__arithmetic__api_iqdiv64}
+
+Divides an IQ number by sixty four.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQdiv64(\hyperlink{using_type}{\_iqN} A)}
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the number to be divided, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function divides an IQ number by sixty four.  This will work for any IQ
+format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the number divided by sixty four.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQmpy2 function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqmpy2}{
+\subsection[_IQmpy2]{\_IQmpy2}}
+\label{group__arithmetic__api_iqmpy2}
+
+Multiplies an IQ number by two.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQmpy2(\hyperlink{using_type}{\_iqN} A)}
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the number to be multiplied, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function multiplies an IQ number by two.  This will work for any IQ
+format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the number multiplied by two.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQmpy4 function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqmpy4}{
+\subsection[_IQmpy4]{\_IQmpy4}}
+\label{group__arithmetic__api_iqmpy4}
+
+Multiplies an IQ number by four.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQmpy4(\hyperlink{using_type}{\_iqN} A)}
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the number to be multiplied, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function multiplies an IQ number by four.  This will work for any IQ
+format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the number multiplied by four.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQmpy8 function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqmpy8}{
+\subsection[_IQmpy8]{\_IQmpy8}}
+\label{group__arithmetic__api_iqmpy8}
+
+Multiplies an IQ number by eight.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQmpy8(\hyperlink{using_type}{\_iqN} A)}
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the number to be multiplied, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function multiplies an IQ number by eight.  This will work for any IQ
+format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the number multiplied by eight.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQmpy16 function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqmpy16}{
+\subsection[_IQmpy16]{\_IQmpy16}}
+\label{group__arithmetic__api_iqmpy16}
+
+Multiplies an IQ number by sixteen.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQmpy16(\hyperlink{using_type}{\_iqN} A)}
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the number to be multiplied, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function multiplies an IQ number by sixteen.  This will work for any IQ
+format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the number multiplied by sixteen.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQmpy32 function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqmpy32}{
+\subsection[_IQmpy32]{\_IQmpy32}}
+\label{group__arithmetic__api_iqmpy32}
+
+Multiplies an IQ number by thirty two.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQmpy32(\hyperlink{using_type}{\_iqN} A)}
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the number to be multiplied, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function multiplies an IQ number by thirty two.  This will work for any IQ
+format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the number multiplied by thirty two.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQmpy64 function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqmpy64}{
+\subsection[_IQmpy64]{\_IQmpy64}}
+\label{group__arithmetic__api_iqmpy64}
+
+Multiplies an IQ number by sixty four.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQmpy64(\hyperlink{using_type}{\_iqN} A)}
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the number to be multiplied, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function multiplies an IQ number by sixty four.  This will work for any IQ
+format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the number multiplied by sixty four.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNdiv function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqndiv}{
+\subsection[_IQNdiv]{\_IQNdiv}}
+\label{group__arithmetic__api_iqndiv}
+
+Divides two IQ numbers.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNdiv(\hyperlink{using_type}{\_iqN} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iqN} B)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQdiv(\hyperlink{using_type}{\_iq} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iq} B)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the numerator, in IQ format.
+\item[{\em B}] is the denominator, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function divides two IQ numbers, returning the quotient in IQ format.  The
+result is saturated if it exceeds the capacity of the IQ format, and division
+by zero always results in positive saturation (regardless of the sign of A).
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the quotient in IQ format.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNmpy function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqnmpy}{
+\subsection[_IQNmpy]{\_IQNmpy}}
+\label{group__arithmetic__api_iqnmpy}
+
+Multiplies two IQ numbers.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNmpy(\hyperlink{using_type}{\_iqN} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iqN} B)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQmpy(\hyperlink{using_type}{\_iq} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iq} B)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the first number, in IQ format.
+\item[{\em B}] is the second number, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function multiplies two IQ numbers, returning the product in IQ format.
+The result is neither rounded nor saturated, so if the product is greater than
+the minimum or maximum values for the given IQ format, the return value wraps
+around and produces inaccurate results.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the product in IQ format.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNmpyI32 function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqnmpyi32}{
+\subsection[_IQNmpyI32]{\_IQNmpyI32}}
+\label{group__arithmetic__api_iqnmpyi32}
+
+Multiplies an IQ number by an integer.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNmpyI32(\hyperlink{using_type}{\_iqN} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} long B)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQmpyI32(\hyperlink{using_type}{\_iq} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} long B)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the first number, in IQ format.
+\item[{\em B}] is the second number, in integer format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function multiplies an IQ number by an integer, returning the product in
+IQ format.  The result is not saturated, so if the product is greater than the
+minimum or maximum values for the given IQ format, the return value wraps
+around and produces inaccurate results.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the product in IQ format.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNmpyI32frac function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqnmpyi32frac}{
+\subsection[_IQNmpyI32frac]{\_IQNmpyI32frac}}
+\label{group__arithmetic__api_iqnmpyi32frac}
+
+Multiplies an IQ number by an integer, returning the fractional portion of the
+product.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNmpyI32frac(\hyperlink{using_type}{\_iqN} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} long B)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQmpyI32frac(\hyperlink{using_type}{\_iq} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} long B)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the first number, in IQ format.
+\item[{\em B}] is the second number, in integer format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function multiplies an IQ number by an integer, returning the fractional
+portion of the product in IQ format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the fractional portion of the product in IQ format.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNmpyI32int function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqnmpyi32int}{
+\subsection[_IQNmpyI32int]{\_IQNmpyI32int}}
+\label{group__arithmetic__api_iqnmpyi32int}
+
+Multiplies an IQ number by an integer, returning the integer portion of the
+result.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{long\\
+\_IQNmpyI32int(\hyperlink{using_type}{\_iqN} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} long B)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{long\\
+\_IQmpyI32int(\hyperlink{using_type}{\_iq} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} long B)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the first number, in IQ format.
+\item[{\em B}] is the second number, in integer format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function multiplies an IQ number by an integer, returning the integer
+portion of the product.  The result is saturated, so if the integer portion of
+the product is greater than the minimum or maximum values for an integer, the
+result will be saturated to the minimum or maximum value.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the product in IQ format.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNmpyIQX function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqnmpyiqx}{
+\subsection[_IQNmpyIQX]{\_IQNmpyIQX}}
+\label{group__arithmetic__api_iqnmpyiqx}
+
+Multiplies two IQ numbers.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNmpyIQX(\hyperlink{using_type}{\_iqN} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} long IQA,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iqN} B,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} long IQB)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQmpyIQX(\hyperlink{using_type}{\_iq} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} long IQA,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iq} B,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} long IQB,)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the first number, in IQ format.
+\item[{\em IQA}] is the IQ format for the first number.
+\item[{\em B}] is the second number, in IQ format.
+\item[{\em IQB}] is the IQ format for the second number.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function multiplies two IQ numbers in different IQ formats, returning the
+product in a third IQ format.  The result is neither rounded nor saturated, so
+if the product is greater than the minimum or maximum values for the given
+output IQ format, the return value will wrap around and produce inaccurate
+results.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the product in IQ format.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNrmpy function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqnrmpy}{
+\subsection[_IQNrmpy]{\_IQNrmpy}}
+\label{group__arithmetic__api_iqnrmpy}
+
+Multiplies two IQ numbers, with rounding.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNrmpy(\hyperlink{using_type}{\_iqN} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iqN} B)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQrmpy(\hyperlink{using_type}{\_iq} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iq} B)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the first number, in IQ format.
+\item[{\em B}] is the second number, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function multiplies two IQ numbers, returning the product in IQ format.
+The result is rounded but not saturated, so if the product is greater than
+the minimum or maximum values for the given IQ format, the return value wraps
+around and produces inaccurate results.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the product in IQ format.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNrsmpy function.
+%
+%******************************************************************************
+\hypertarget{group__arithmetic__api_iqnrsmpy}{
+\subsection[_IQNrsmpy]{\_IQNrsmpy}}
+\label{group__arithmetic__api_iqnrsmpy}
+
+Multiplies two IQ numbers, with rounding and saturation.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNrsmpy(\hyperlink{using_type}{\_iqN} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iqN} B)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQrsmpy(\hyperlink{using_type}{\_iq} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iq} B)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the first number, in IQ format.
+\item[{\em B}] is the second number, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function multiplies two IQ numbers, returning the product in IQ format.
+The result is rounded and saturated, so if the product is greater than
+the minimum or maximum values for the given IQ format, the return value is
+saturated to the minimum or maximum value for the given IQ format (as
+appropriate).
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the product in IQ format.
+\end{Desc}
+
+\endlatexonly
+*/

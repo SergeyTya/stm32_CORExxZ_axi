@@ -1,0 +1,100 @@
+//*****************************************************************************
+//
+// IQmpyI32int.S - Find integer portion of multiplying IQ by I32
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// Function:   _IQNmpyI32int
+//
+//*****************************************************************************
+//
+// C Usage:    extern long _IQmpyI32int(long A, long B); // no round or sat
+//
+//-----------------------------------------------------------------------------
+//
+// On Entry:   r0     = A in IQ format
+//             r1     = B in 32-bit integer (long) format
+//
+// Regs Used:  r0, r1
+//
+// On Exit:    r0     = integer portion of A*B stored as "long"
+//
+// Q range:    30 to 1
+//
+//-----------------------------------------------------------------------------
+//
+// Algorithm:  The integer portion of the IQ*I32 number is calculated
+//             as follows:
+//
+//                integer = A*B >> q_value;
+//
+//-----------------------------------------------------------------------------
+//
+// Benchmark:
+//
+// Cycles = 7-10 (not including call)
+//
+//*****************************************************************************
+__PREAMBLE__
+//$ BEGIN_UNROLL _QQ_ 1 to 30
+//*****************************************************************************
+//
+// _IQ_QQ_mpyI32int
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_mpyI32int
+    __EXPORT__ _IQ_QQ_mpyI32int__THUMB_LABEL__
+_IQ_QQ_mpyI32int__LABEL__
+    //
+    // Perform a signed 32->64 bit multiply
+    //
+    smull   r0, r1, r0, r1
+
+    //
+    // See if the result is negative.
+    //
+    cmp     r1, #0
+    bpl     not_negative_QQ_
+        //
+        // Since the result is negative, add 0.99999999 to the result so that
+        // must fully reach -1 to return -1, fully reach -2 to return -2, and
+        // so on.
+        //
+#if _QQ_ >= 24
+        mvn     r2, #((0xff000000 << (_QQ_ - 24)) & 0xff000000)
+        adds    r0, r0, r2
+#endif
+#if _QQ_ < 24 && _QQ_ > 8
+        mov     r2, #(1 << _QQ_)
+        sub     r2, r2, #1
+        adds    r0, r0, r2
+#endif
+#if _QQ_ <= 8
+        adds    r0, r0, #((1 << _QQ_) - 1)
+#endif
+        adc     r1, r1, #0
+
+    //
+    // Shift the result down by Q
+    //
+not_negative_QQ___LABEL__
+    lsr     r0, r0, #_QQ_
+    orr     r0, r0, r1, lsl #(32 - _QQ_)
+
+    //
+    // Return to the caller.
+    //
+    bx      lr
+
+    //
+    // Make sure that the end of the section is word aligned.
+    //
+    __ALIGN__
+
+//$ END_UNROLL _QQ_
+    __END__

@@ -1,0 +1,158 @@
+/*
+* FreeModbus Libary: BARE Port
+* Copyright (C) 2006 Christian Walter <wolti@sil.at>
+*
+* This library is free software; you can redistribute it and/or
+* modify it under the terms of the GNU Lesser General Public
+* License as published by the Free Software Foundation; either
+* version 2.1 of the License, or (at your option) any later version.
+*
+* This library is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+* Lesser General Public License for more details.
+*
+* You should have received a copy of the GNU Lesser General Public
+* License along with this library; if not, write to the Free Software
+* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*
+* File: $Id: portserial.c,v 1.1 2006/08/22 21:35:13 wolti Exp $
+*/
+#include <mb.h>
+#include "port.h"
+#include "stm32f10x.h"
+
+
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "semphr.h"
+
+
+/* ----------------------- Modbus includes ----------------------------------*/
+#include "mbport.h"
+
+  #define MB_UART                   USART1
+  #define USARTy_GPIO              GPIOA
+  #define USARTy_CLK               RCC_APB2Periph_USART1
+  #define USARTy_GPIO_CLK          RCC_APB2Periph_GPIOA
+  #define USARTy_RxPin             GPIO_Pin_10
+  #define USARTy_TxPin             GPIO_Pin_2
+  #define MB_UART_IRQn             USART1_IRQn
+  #define UARTMB_IRQHandler        USART1_IRQHandler
+
+extern SemaphoreHandle_t xBinSem_MODBUS_ITHandler;
+
+uint32_t temp_RXITST=0;
+
+
+/* ----------------------- static functions ---------------------------------*/
+static void prvvUARTTxReadyISR( void );
+static void prvvUARTRxISR( void );
+
+/* ----------------------- Start implementation -----------------------------*/
+
+
+BOOL xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity eParity )
+{
+   (void) ucPORT;
+   (void) ucPORT;
+   USART_InitTypeDef USART_InitStructure;
+   GPIO_InitTypeDef GPIO_InitStructure;
+
+   RCC_APB2PeriphClockCmd(USARTy_GPIO_CLK | USARTy_GPIO_CLK | RCC_APB2Periph_AFIO, ENABLE);
+
+     USART_InitStructure.USART_BaudRate = 9600;
+     USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+     USART_InitStructure.USART_StopBits = USART_StopBits_1;
+     USART_InitStructure.USART_Parity = USART_Parity_No;
+     USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
+     USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
+
+     /* Configure USARTy */
+     USART_Init(MB_UART, &USART_InitStructure);
+
+     USART_ITConfig(MB_UART, USART_IT_RXNE, ENABLE);
+     USART_ITConfig(MB_UART, USART_IT_TXE,  ENABLE);
+     USART_ITConfig(MB_UART, USART_IT_IDLE, ENABLE);
+
+
+     /* Enable the USART2 Pins Software Remapping */
+      GPIO_PinRemapConfig(GPIO_Remap_USART1, ENABLE);
+
+      /* Configure USARTy Rx as input floating */
+      GPIO_InitStructure.GPIO_Pin = USARTy_RxPin;
+      GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+      GPIO_Init(USARTy_GPIO, &GPIO_InitStructure);
+
+
+      /* Configure USARTy Tx as alternate function push-pull */
+      GPIO_InitStructure.GPIO_Pin = USARTy_TxPin;
+      GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+      GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+      GPIO_Init(USARTy_GPIO, &GPIO_InitStructure);
+
+    return TRUE;
+}
+
+void vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
+{
+
+  if(xRxEnable == TRUE)
+  {
+	   USART_ITConfig(MB_UART, USART_IT_RXNE, ENABLE);
+	   UART_ITConfig(MB_UART, USART_IT_IDLE ,ENABLE);
+  }
+  else
+  {
+	   USART_ITConfig(MB_UART, USART_IT_RXNE, DISABLE);
+	   USART_ITConfig(MB_UART, USART_IT_IDLE ,DISABLE);
+  } 
+  
+  if(xTxEnable == TRUE)
+  {
+       UART_ITConfig(MB_UART, USART_IT_TXE, ENABLE);
+
+  }
+  else
+  {
+	  // UART_ITConfig(MB_UART, UART_IT_TX, DISABLE);
+	  temp_RXITST=0;
+  }
+}
+
+BOOL xMBPortSerialPutByte( CHAR ucByte )
+{
+
+	USART_SendData(MB_UART, ucByte);
+
+  return TRUE;
+}
+
+BOOL xMBPortSerialGetByte( CHAR * pucByte )
+{
+	*pucByte =(CHAR) USART_ReceiveData(MB_UART);
+  return TRUE;
+}
+void UARTMB_IRQHandler(void)
+{
+		if (USART_GetITStatus( MB_UART, USART_IT_RXNE) == SET) {
+			USART_ClearITPendingBit( MB_UART, USART_IT_RXNE);
+			temp_RXITST=USART_IT_RXNE;
+			NVIC_ClearPendingIRQ(MB_UART_IRQn);
+		};
+
+		if (USART_GetITStatus( MB_UART, USART_IT_IDLE) == SET) {
+			USART_ClearITPendingBit( MB_UART, USART_IT_IDLE);
+			temp_RXITST=USART_IT_IDLE;
+			NVIC_ClearPendingIRQ(MB_UART_IRQn);
+		};
+
+		HardFault_Handler();
+
+}
+
+
+
+
+/*-----------------------------------------------------------------------------------*/

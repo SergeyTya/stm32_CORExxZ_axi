@@ -1,0 +1,517 @@
+//*****************************************************************************
+//
+// trigonometric.dox - Doxygen documentation for the IQmath trigonometric
+//                     functions.
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+/*! \page trigonometric_chapter
+\latexonly
+\chapter{Trigonometric Functions}
+\jumptext{trigonometric_intro}{Introduction}\\
+\jumptext{group__trigonometric__api}{API Functions}
+\input{trigonometric_intro}
+\input{group__trigonometric__api}
+\endlatexonly
+*/
+
+/*! \page trigonometric_intro Introduction
+The trigonometric functions compute a variety of the trigonometric functions
+for IQ numbers.  Functions are provided that take the traditional radians
+inputs (or produce the traditional radians output for the inverse functions),
+as well as a cycles per unit format where the range [0, 1) is mapped onto the
+circle (in other words, 0.0 is 0 radians, 0.25 is \latexonly
+\(\pi\)\endlatexonly/2 radians, 0.5 is \latexonly \(\pi\)\endlatexonly radians,
+0.75 is 3\latexonly\(\pi\)\endlatexonly/2 radians, and 1.0 is
+2\latexonly\(\pi\)\endlatexonly radians).  The following table summarizes the
+trigonometric functions.
+
+\latexonly
+\arrayrulewidth=1pt
+\begin{longtable}{|@{\hspace{0.2em}}c@{\hspace{0.2em}}|@{}c@{}|@{}c@{}|@{}c@{}|@{}c@{}|@{}c@{}|@{}c@{}|}
+\hline
+\textbf{\begin{tabular}{c}Function\\Name\end{tabular}}&
+\textbf{\begin{tabular}{c}IQ\\Format\end{tabular}}&
+\textbf{\begin{tabular}{c}Execution\\Cycles\end{tabular}}&
+\textbf{\begin{tabular}{c}Accuracy\\(bits)\end{tabular}}&
+\textbf{\begin{tabular}{c}Program\\Memory\\(bytes)\end{tabular}}&
+\textbf{\begin{tabular}{c}Input\\Format\end{tabular}}&
+\textbf{\begin{tabular}{c}Output\\Format\end{tabular}}\\
+% Function                                                      IQ     cycle accuracy  bytes input     output
+\hline
+\hyperlink{group__trigonometric__api_iqnacos}{\_IQNacos}       & 1-29 &  58 & 28 bits & 148 & IQN     & IQN \\
+\hline
+\hyperlink{group__trigonometric__api_iqnasin}{\_IQNasin}       & 1-29 &  54 & 28 bits & 140 & IQN     & IQN \\
+\hline
+\hyperlink{group__trigonometric__api_iqnatan}{\_IQNatan}       & 1-29 & 109 & 30 bits & 218 & IQN     & IQN \\
+\hline
+\hyperlink{group__trigonometric__api_iqnatan2}{\_IQNatan2}     & 1-29 & 107 & 30 bits & 216 & IQN,IQN & IQN \\
+\hline
+\hyperlink{group__trigonometric__api_iqnatan2pu}{\_IQNatan2PU} & 1-30 &  99 & 31 bits & 208 & IQN,IQN & IQN \\
+\hline
+\hyperlink{group__trigonometric__api_iqncos}{\_IQNcos}         & 1-29 &  56 & 30 bits & 184 & IQN     & IQN \\
+\hline
+\hyperlink{group__trigonometric__api_iqncospu}{\_IQNcosPU}     & 1-30 &  50 & 30 bits & 128 & IQN     & IQN \\
+\hline
+\hyperlink{group__trigonometric__api_iqnsin}{\_IQNsin}         & 1-29 &  56 & 30 bits & 180 & IQN     & IQN \\
+\hline
+\hyperlink{group__trigonometric__api_iqnsinpu}{\_IQNsinPU}     & 1-30 &  50 & 30 bits & 124 & IQN     & IQN \\
+\hline
+\end{longtable}
+\endlatexonly
+
+- The number of execution cycles and program memory usage provided above
+  assumes IQ24 format.  Execution cycles may vary by a few cycles for other IQ
+  formats, and program memory usage may vary by a few bytes for other IQ
+  formats.
+
+- The number of execution cycles provided in the table includes the call and
+  return and assumes that the IQmath library is running from internal flash.
+
+- Accuracy should always be tested and verified within the end application.
+*/
+
+/*! \defgroup trigonometric_api API Functions
+\latexonly
+%******************************************************************************
+%
+% The documentation for the _IQNacos function.
+%
+%******************************************************************************
+\hypertarget{group__trigonometric__api_iqnacos}{
+\subsection[_IQNacos]{\_IQNacos}}
+\label{group__trigonometric__api_iqnacos}
+
+Computes the inverse cosine of the input value.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNacos(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 29)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQacos(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input value in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the inverse cosine of the input value.
+\end{Desc}
+
+\begin{Desc}
+\item[Note:]
+This function is not available for IQ30 format because the full output range
+(-\(\pi\) through \(\pi\)) cannot be represented in IQ30 format (which ranges
+from -2 through 2).
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+The inverse cosine of the input value, in radians.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNasin function.
+%
+%******************************************************************************
+\hypertarget{group__trigonometric__api_iqnasin}{
+\subsection[_IQNasin]{\_IQNasin}}
+\label{group__trigonometric__api_iqnasin}
+
+Computes the inverse sine of the input value.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNasin(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 29)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQasin(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input value in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the inverse sine of the input value.
+\end{Desc}
+
+\begin{Desc}
+\item[Note:]
+This function is not available for IQ30 format because the full output range
+(-\(\pi\) through \(\pi\)) cannot be represented in IQ30 format (which ranges
+from -2 through 2).
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+The inverse sine of the input value, in radians.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNatan function.
+%
+%******************************************************************************
+\hypertarget{group__trigonometric__api_iqnatan}{
+\subsection[_IQNatan]{\_IQNatan}}
+\label{group__trigonometric__api_iqnatan}
+
+Computes the inverse tangent of the input value.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNatan(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 29)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQatan(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input value in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the inverse tangent of the input value.
+\end{Desc}
+
+\begin{Desc}
+\item[Note:]
+This function is not available for IQ30 format because the full output range
+(-\(\pi\) through \(\pi\)) cannot be represented in IQ30 format (which ranges
+from -2 through 2).
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+The inverse tangent of the input value, in radians.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNatan2 function.
+%
+%******************************************************************************
+\hypertarget{group__trigonometric__api_iqnatan2}{
+\subsection[_IQNatan2]{\_IQNatan2}}
+\label{group__trigonometric__api_iqnatan2}
+
+Computes the inverse four-quadrant tangent of the input point.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNatan2(\hyperlink{using_type}{\_iqN} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iqN} B)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 29)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQatan2(\hyperlink{using_type}{\_iq} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iq} B)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the Y coordinate input value in IQ format.
+\item[{\em B}] is the X coordinate input value in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the inverse four-quadrant tangent of the input point.
+\end{Desc}
+
+\begin{Desc}
+\item[Note:]
+This function is not available for IQ30 format because the full output range
+(-\(\pi\) through \(\pi\)) cannot be represented in IQ30 format (which ranges
+from -2 through 2).
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+The inverse four-quadrant tangent of the input point, in radians.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNatan2PU function.
+%
+%******************************************************************************
+\hypertarget{group__trigonometric__api_iqnatan2pu}{
+\subsection[_IQNatan2PU]{\_IQNatan2PU}}
+\label{group__trigonometric__api_iqnatan2pu}
+
+Computes the inverse four-quadrant tangent of the input point, returning the
+result in cycles per unit.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNatan2PU(\hyperlink{using_type}{\_iqN} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iqN} B)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQatan2PU(\hyperlink{using_type}{\_iq} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iq} B)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the X coordinate input value in IQ format.
+\item[{\em B}] is the Y coordinate input value in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the inverse four-quadrant tangent of the input point,
+returning the result in cycles per unit.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+The inverse four-quadrant tangent of the input point, in cycles per unit.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNcos function.
+%
+%******************************************************************************
+\hypertarget{group__trigonometric__api_iqncos}{
+\subsection[_IQNcos]{\_IQNcos}}
+\label{group__trigonometric__api_iqncos}
+
+Computes the cosine of the input value.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNcos(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 29)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQcos(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input value in radians, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the cosine of the input value.
+\end{Desc}
+
+\begin{Desc}
+\item[Note:]
+This function is not available for IQ30 format because the full input range
+(-\(\pi\) through \(\pi\)) cannot be represented in IQ30 format (which ranges
+from -2 through 2).
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+The cosine of the input value.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNcosPU function.
+%
+%******************************************************************************
+\hypertarget{group__trigonometric__api_iqncospu}{
+\subsection[_IQNcosPU]{\_IQNcosPU}}
+\label{group__trigonometric__api_iqncospu}
+
+Computes the cosine of the input value in cycles per unit.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNcosPU(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQcosPU(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input value in cycles per unit, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the cosine of the input value.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+The cosine of the input value.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNsin function.
+%
+%******************************************************************************
+\hypertarget{group__trigonometric__api_iqnsin}{
+\subsection[_IQNsin]{\_IQNsin}}
+\label{group__trigonometric__api_iqnsin}
+
+Computes the sine of the input value.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNsin(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 29)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQsin(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input value in radians, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the sine of the input value.
+\end{Desc}
+
+\begin{Desc}
+\item[Note:]
+This function is not available for IQ30 format because the full input range
+(-\(\pi\) through \(\pi\)) cannot be represented in IQ30 format (which ranges
+from -2 through 2).
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+The sine of the input value.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNsinPU function.
+%
+%******************************************************************************
+\hypertarget{group__trigonometric__api_iqnsinpu}{
+\subsection[_IQNsinPU]{\_IQNsinPU}}
+\label{group__trigonometric__api_iqnsinpu}
+
+Computes the sine of the input value in cycles per unit.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNsinPU(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQsinPU(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input value in cycles per unit, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the sine of the input value.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+The sine of the input value.
+\end{Desc}
+
+\endlatexonly
+*/

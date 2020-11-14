@@ -1,0 +1,35 @@
+//*****************************************************************************
+//
+// intro.dox - IQmath introduction.
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+/*! \page intro_chapter
+\latexonly
+\chapter{Introduction}
+\input{intro}
+\endlatexonly
+*/
+
+/*! \page intro
+The Texas Instruments&reg;&nbsp;Tiva&tm;&nbsp;IQmath Library is a
+collection of highly optimized and high-precision mathematical functions for
+C/C++ programmers to seamlessly port a floating-point algorithm into
+fixed-point code on Tiva devices.  These routines are typically used in
+computationally intensive real-time applications where optimal execution speed
+and high accuracy is critical.  By using the IQmath library, it is possible to
+achieve execution speeds considerably faster than equivalent code written using
+floating-point math.
+
+\if LMI
+The following tool chains are supported:
+
+- Keil&tm;&nbsp;RealView&reg;&nbsp;Microcontroller Development Kit
+- Mentor Graphics&reg;&nbsp;Sourcery&tm;&nbsp;CodeBench
+- IAR Embedded Workbench&reg;
+- Texas Instruments Code Composer Studio&tm;
+\endif
+*/

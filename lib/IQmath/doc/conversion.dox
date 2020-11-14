@@ -1,0 +1,554 @@
+//*****************************************************************************
+//
+// conversion.dox - Doxygen documentation for the IQmath format conversion
+//                  functions.
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+/*! \page conversion_chapter
+\latexonly
+\chapter{Format Conversion Functions}
+\jumptext{conversion_intro}{Introduction}\\
+\jumptext{group__conversion__api}{API Functions}
+\input{conversion_intro}
+\input{group__conversion__api}
+\endlatexonly
+*/
+
+/*! \page conversion_intro Introduction
+The format conversion functions provide a way to convert numbers to and from
+various IQ formats.  There are functions to convert IQ numbers to and from
+single- and double-precision floating-point numbers, to and from integers, to
+and from strings, to and from 16-bit QN format numbers, to and from various IQ
+formats, and to extract the integer and fractional portion of an IQ number.
+The following table summarizes the format conversion functions:
+
+\latexonly
+\arrayrulewidth=1pt
+\begin{longtable}{|@{}c@{}|@{}c@{}|@{}c@{}|@{}c@{}|@{}c@{}|@{\hspace{0.2em}}c@{\hspace{0.2em}}|@{\hspace{0.2em}}c@{\hspace{0.2em}}|}
+\hline
+\textbf{\begin{tabular}{c}Function\\Name\end{tabular}}&
+\textbf{\begin{tabular}{c}IQ\\Format\end{tabular}}&
+\textbf{\begin{tabular}{c}Execution\\Cycles\end{tabular}}&
+\textbf{\begin{tabular}{c}Accuracy\\(bits)\end{tabular}}&
+\textbf{\begin{tabular}{c}Program\\Memory\\(bytes)\end{tabular}}&
+\textbf{\begin{tabular}{c}Input\\Format\end{tabular}}&
+\textbf{\begin{tabular}{c}Output\\Format\end{tabular}}\\
+% Function                                             IQ     cycle accuracy  bytes input       output
+\hline
+\hyperlink{group__conversion__api_atoiqn}{\_atoIQN}   & 1-30 & n/a &     n/a & 304 & char *    & IQN       \\
+\hline
+\hyperlink{group__conversion__api_iqn}{\_IQN}         & 1-30 & n/a &     n/a & n/a & float     & IQN       \\
+\hline
+\hyperlink{group__conversion__api_iqnfrac}{\_IQNfrac} & 1-30 &   8 & 32 bits &  12 & IQN       & IQN       \\
+\hline
+\hyperlink{group__conversion__api_iqnint}{\_IQNint}   & 1-30 &  ~1 & 32 bits &   2 & IQN       & long      \\
+\hline
+\hyperlink{group__conversion__api_iqntoa}{\_IQNtoa}   & 1-30 & n/a &     n/a & 286 & IQN       & char *    \\
+\hline
+\hyperlink{group__conversion__api_iqntod}{\_IQNtoD}   & 1-30 &  20 &     n/a &  52 & IQN       & double    \\
+\hline
+\hyperlink{group__conversion__api_iqntof}{\_IQNtoF}   & 1-30 &  17 &     n/a &  36 & IQN       & float     \\
+\hline
+\hyperlink{group__conversion__api_iqntoiq}{\_IQNtoIQ} & 1-30 &  ~1 &     n/a &   2 & IQN       & GLOBAL\_Q \\
+\hline
+\hyperlink{group__conversion__api_iqtoiqn}{\_IQtoIQN} & 1-30 &  ~1 &     n/a &   2 & GLOBAL\_Q & IQN       \\
+\hline
+\hyperlink{group__conversion__api_iqtoqn}{\_IQtoQN}   & 1-15 &  ~1 &     n/a &   2 & GLOBAL\_Q & QN        \\
+\hline
+\hyperlink{group__conversion__api_qntoiq}{\_QNtoIQ}   & 1-15 &  ~1 &     n/a &   2 & QN        & GLOBAL\_Q \\
+\hline
+\end{longtable}
+\endlatexonly
+
+- The number of execution cycles and program memory usage provided above
+  assumes IQ24 format.  Execution cycles may vary by a few cycles for other IQ
+  formats, and program memory usage may vary by a few bytes for other IQ
+  formats.
+
+- The number of execution cycles provided in the table includes the call and
+  return and assumes that the IQmath library is running from internal flash.
+
+- Accuracy should always be tested and verified within the end application.
+*/
+
+/*! \defgroup conversion_api API Functions
+\latexonly
+%******************************************************************************
+%
+% The documentation for the _atoIQN function.
+%
+%******************************************************************************
+\hypertarget{group__conversion__api_atoiqn}{
+\subsection[_atoIQN]{\_atoIQN}}
+\label{group__conversion__api_atoiqn}
+
+Converts a string to an IQ number.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_atoIQN(const char *A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_atoIQ(const char *A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the string to be converted.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function converts a string into an IQ number.  The input string may
+contain (in order) an optional sign and a string of digits optionally
+containing a radix character.  A unrecognized character ends the string and
+returns zero.  If the input string converts to a number greater than the
+minimum or maximum values for the given IQ format, the return value is limited
+to the minimum or maximum value.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the IQ number corresponding to the input string.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQN function.
+%
+%******************************************************************************
+\hypertarget{group__conversion__api_iqn}{
+\subsection[_IQN]{\_IQN}}
+\label{group__conversion__api_iqn}
+
+Converts a floating-point constant or variable into an IQ number.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQN(float A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQ(float A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the floating-point variable or constant to be converted.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function converts a floating-point constant or variable into the
+equivalent IQ number.  If the input value is greater than the minimum or
+maximum values for the given IQ format, the return value wraps around and
+produces inaccurate results.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the IQ number corresponding to the floating-point variable or constant.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNfrac function.
+%
+%******************************************************************************
+\hypertarget{group__conversion__api_iqnfrac}{
+\subsection[_IQNfrac]{\_IQNfrac}}
+\label{group__conversion__api_iqnfrac}
+
+Returns the fractional portion of an IQ number.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNfrac(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQfrac(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input number in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function returns the fractional portion of an IQ number as an IQ number.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the fractional portion of the input IQ number.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNint function.
+%
+%******************************************************************************
+\hypertarget{group__conversion__api_iqnint}{
+\subsection[_IQNint]{\_IQNint}}
+\label{group__conversion__api_iqnint}
+
+Returns the integer portion of an IQ number.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{long\\
+\_IQNint(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{long\\
+\_IQint(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input number in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function returns the integer portion of an IQ number.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the integer portion of the input IQ number.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNtoa function.
+%
+%******************************************************************************
+\hypertarget{group__conversion__api_iqntoa}{
+\subsection[_IQNtoa]{\_IQNtoa}}
+\label{group__conversion__api_iqntoa}
+
+Converts an IQ number to a string.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{int\\
+\_IQNtoa(char *A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} const char *B,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iqN} C)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{int\\
+\_IQtoa(char *A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} const char *B,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iq} C)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is a pointer to the buffer to store the converted IQ number.
+\item[{\em B}] is the format string specifying how to convert the IQ number.
+Must be of the form ``\%xx.yyf'' with xx and yy at most 2 characters in length.
+\item[{\em C}] is the IQ number to convert.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function converts the IQ number to a string, using the specified format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns 0 if there is no error, 1 if the width is too small to hold the integer
+characters, and 2 if an illegal format was specified.  If {\bf MATH\_TYPE} is
+set to {\bf FLOAT\_MATH}, the return is the number of characters written into
+the output buffer.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNtoD function.
+%
+%******************************************************************************
+\hypertarget{group__conversion__api_iqntod}{
+\subsection[_IQNtoD]{\_IQNtoD}}
+\label{group__conversion__api_iqntod}
+
+Converts an IQ number to a double-precision floating-point number.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{double\\
+\_IQNtoD(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{double\\
+\_IQtoD(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the IQ number to be converted.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function converts an IQ number into a double-precision floating-point
+number.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the double-precision floating-point number corresponding to the input
+IQ number.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNtoF function.
+%
+%******************************************************************************
+\hypertarget{group__conversion__api_iqntof}{
+\subsection[_IQNtoF]{\_IQNtoF}}
+\label{group__conversion__api_iqntof}
+
+Converts an IQ number to a single-precision floating-point number.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{float\\
+\_IQNtoF(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{float\\
+\_IQtoF(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the IQ number to be converted.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function converts an IQ number into a single-precision floating-point
+number.  Since single-precision floating-point values have only 24 bits of
+mantissa, 8 bits of accuracy will be lost via this conversion.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the single-precision floating-point number corresponding to the input
+IQ number.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNtoIQ function.
+%
+%******************************************************************************
+\hypertarget{group__conversion__api_iqntoiq}{
+\subsection[_IQNtoIQ]{\_IQNtoIQ}}
+\label{group__conversion__api_iqntoiq}
+
+Converts an IQ number in IQN format to the global IQ format.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQNtoIQ(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is IQ number to be converted.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function converts an IQ number in the specified IQ format to an IQ number
+in the global IQ format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the IQ number converted into the global IQ format.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQtoIQN function.
+%
+%******************************************************************************
+\hypertarget{group__conversion__api_iqtoiqn}{
+\subsection[_IQtoIQN]{\_IQtoIQN}}
+\label{group__conversion__api_iqtoiqn}
+
+Converts an IQ number in the global IQ format to the IQN format.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQtoIQN(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the IQ number to be converted.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function converts an IQ number in the global IQ format to an IQ number in
+the specified IQ format.
+be limited to the minimum or maximum value.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the IQ number converted to the specified IQ format.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQtoQN function.
+%
+%******************************************************************************
+\hypertarget{group__conversion__api_iqtoqn}{
+\subsection[_IQtoQN]{\_IQtoQN}}
+\label{group__conversion__api_iqtoqn}
+
+Converts an IQ number to a 16-bit number in QN format.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{short\\
+\_IQtoQN(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for a specific Q format (1 <= N <= 15)
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the IQ number to be converted.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function converts an IQ number in the global IQ format to a 16-bit number
+in QN format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the QN number corresponding to the input IQ number.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _QNtoIQ function.
+%
+%******************************************************************************
+\hypertarget{group__conversion__api_qntoiq}{
+\subsection[_QNtoIQ]{\_QNtoIQ}}
+\label{group__conversion__api_qntoiq}
+
+Converts a 16-bit QN number to an IQ number.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_QNtoIQ(short A)}
+
+\hspace*{2em}for a specific Q format (1 <= N <= 15)
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the QN number to be converted.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function converts a 16-bit QN number to an IQ number in the global IQ
+format.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the IQ number corresponding to the input QN number.
+\end{Desc}
+
+\endlatexonly
+*/

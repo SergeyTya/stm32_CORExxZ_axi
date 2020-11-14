@@ -1,0 +1,304 @@
+//*****************************************************************************
+//
+// mathematical.dox - Doxygen documentation for the IQmath mathematical
+//                    functions.
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+/*! \page mathematical_chapter
+\latexonly
+\chapter{Mathematical Functions}
+\jumptext{mathematical_intro}{Introduction}\\
+\jumptext{group__mathematical__api}{API Functions}
+\input{mathematical_intro}
+\input{group__mathematical__api}
+\endlatexonly
+*/
+
+/*! \page mathematical_intro Introduction
+The mathematical functions compute a variety of advanced mathematical functions
+for IQ numbers.  The following table summarizes the mathematical functions:
+
+\latexonly
+\arrayrulewidth=1pt
+\begin{longtable}{|@{}c@{}|@{}c@{}|@{}c@{}|@{}c@{}|@{}c@{}|@{}c@{}|@{}c@{}|}
+\hline
+\textbf{\begin{tabular}{c}Function\\Name\end{tabular}}&
+\textbf{\begin{tabular}{c}IQ\\Format\end{tabular}}&
+\textbf{\begin{tabular}{c}Execution\\Cycles\end{tabular}}&
+\textbf{\begin{tabular}{c}Accuracy\\(bits)\end{tabular}}&
+\textbf{\begin{tabular}{c}Program\\Memory\\(bytes)\end{tabular}}&
+\textbf{\begin{tabular}{c}Input\\Format\end{tabular}}&
+\textbf{\begin{tabular}{c}Output\\Format\end{tabular}}\\
+% Function                                                 IQ     cyc  accuracy  bytes input       output
+\hline
+\hyperlink{group__mathematical__api_iqnexp}{\_IQNexp}     & 1-30 & 96 & 30 bits & 184 & IQN     & IQN \\
+\hline
+\hyperlink{group__mathematical__api_iqnexp2}{\_IQNexp2}   & 1-30 & 72 & 30 bits & 128 & IQN     & IQN \\
+\hline
+\hyperlink{group__mathematical__api_iqnisqrt}{\_IQNisqrt} & 1-30 & 62 & 30 bits & 116 & IQN     & IQN \\
+\hline
+\hyperlink{group__mathematical__api_iqnmag}{\_IQNmag}     & 1-30 & 83 & 30 bits & 136 & IQN,IQN & IQN \\
+\hline
+\hyperlink{group__mathematical__api_iqnsqrt}{\_IQNsqrt}   & 1-30 & 63 & 31 bits & 108 & IQN     & IQN \\
+\hline
+\end{longtable}
+\endlatexonly
+
+- The number of execution cycles and program memory usage provided above
+  assumes IQ24 format.  Execution cycles may vary by a few cycles for other IQ
+  formats, and program memory usage may vary by a few bytes for other IQ
+  formats.
+
+- The number of execution cycles provided in the table includes the call and
+  return and assumes that the IQmath library is running from internal flash.
+
+- Accuracy should always be tested and verified within the end application.
+*/
+
+/*! \defgroup mathematical_api API Functions
+\latexonly
+%******************************************************************************
+%
+% The documentation for the _IQNexp function.
+%
+%******************************************************************************
+\hypertarget{group__mathematical__api_iqnexp}{
+\subsection[_IQNexp]{\_IQNexp}}
+\label{group__mathematical__api_iqnexp}
+
+Computes the base-e exponential value of an IQ number.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNexp(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQexp(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input value, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the base-e exponential value of the input, and saturates
+the result if it exceeds the range of the IQ format in use.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the base-e exponential of the input.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNexp2 function.
+%
+%******************************************************************************
+\hypertarget{group__mathematical__api_iqnexp2}{
+\subsection[_IQNexp2]{\_IQNexp2}}
+\label{group__mathematical__api_iqnexp2}
+
+Computes the base-2 exponential value of an IQ number.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNexp2(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQexp2(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input value, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the base-2 exponential value of the input, and saturates
+the result if it exceeds the range of the IQ format in use.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the base-2 exponential of the input.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNisqrt function.
+%
+%******************************************************************************
+\hypertarget{group__mathematical__api_iqnisqrt}{
+\subsection[_IQNisqrt]{\_IQNisqrt}}
+\label{group__mathematical__api_iqnisqrt}
+
+Computes the inverse square root of an IQ number.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNisqrt(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQisqrt(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input value, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the inverse square root (1 / sqrt) of the input, and
+saturates the result if it exceeds the range of the IQ format in use.  Negative
+inputs result in an output of 0.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the inverse square root of the input.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNmag function.
+%
+%******************************************************************************
+\hypertarget{group__mathematical__api_iqnmag}{
+\subsection[_IQNmag]{\_IQNmag}}
+\label{group__mathematical__api_iqnmag}
+
+Computes the magnitude of a two dimensional vector.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNmag(\hyperlink{using_type}{\_iqN} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iqN} B)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQmag(\hyperlink{using_type}{\_iq} A,\\
+\hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hspace*{0em} \hyperlink{using_type}{\_iq} B)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the first input value, in IQ format.
+\item[{\em B}] is the second input value, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the magnitude of a two-dimensional vector provided in
+IQ format.  The result is always positive and saturated if it exceeds the range
+of the IQ format in use.
+
+This is functionally equivalent to
+\hyperlink{group__mathematical__api_iqnsqrt}{\_IQNsqrt}(\hyperlink{group__arithmetic__api_iqnrmpy}{\_IQNrmpy}(A, A) +
+\hyperlink{group__arithmetic__api_iqnrmpy}{\_IQNrmpy}(B, B)), but provides
+better accuracy, speed, and intermediate overflow handling than building this
+computation from \hyperlink{group__mathematical__api_iqnsqrt}{\_IQNsqrt()} and
+\hyperlink{group__arithmetic__api_iqnrmpy}{\_IQNrmpy()}.  For example,
+\hyperlink{group__mathematical__api_iqnmag}{\_IQ16mag}(\hyperlink{group__conversion__api_iqn}{\_IQ16}(30000),
+\hyperlink{group__conversion__api_iqn}{\_IQ16}(1000)) correctly returns
+\hyperlink{group__conversion__api_iqn}{\_IQ16}(30016.6...), even though the
+intermediate value of
+\hyperlink{group__arithmetic__api_iqnrmpy}{\_IQ16rmpy}(\hyperlink{group__conversion__api_iqn}{\_IQ16}(30000),
+\hyperlink{group__conversion__api_iqn}{\_IQ16}(30000)) overflows an
+\hyperlink{using_type}{\_iq16}.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the inverse square root of the input.
+\end{Desc}
+
+%******************************************************************************
+%
+% The documentation for the _IQNsqrt function.
+%
+%******************************************************************************
+\hypertarget{group__mathematical__api_iqnsqrt}{
+\subsection[_IQNsqrt]{\_IQNsqrt}}
+\label{group__mathematical__api_iqnsqrt}
+
+Computes the square root of an IQ number.
+
+\begin{Desc}
+\item[Prototype:]
+\texttt{\hyperlink{using_type}{\_iqN}\\
+\_IQNsqrt(\hyperlink{using_type}{\_iqN} A)}
+
+\hspace*{2em}for a specific IQ format (1 <= N <= 30)
+
+- or -
+
+\texttt{\hyperlink{using_type}{\_iq}\\
+\_IQsqrt(\hyperlink{using_type}{\_iq} A)}
+
+\hspace*{2em}for the global IQ format
+\end{Desc}
+
+\begin{Desc}
+\item[Parameters:]
+\begin{description}
+\item[{\em A}] is the input value, in IQ format.
+\end{description}
+\end{Desc}
+
+\begin{Desc}
+\item[Description:]
+This function computes the square root of the input.  Negative inputs result in
+an output of 0.
+\end{Desc}
+
+\begin{Desc}
+\item[Returns:]
+Returns the square root of the input.
+\end{Desc}
+
+\endlatexonly
+*/

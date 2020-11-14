@@ -1,0 +1,310 @@
+//*****************************************************************************
+//
+// IQsinPU.S - Fixed point calculation of sin in cycles per unit
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// Function:   _IQNsinPU
+//
+//*****************************************************************************
+//
+// C Usage:    extern long _IQNsinPU(long U);
+//
+//-----------------------------------------------------------------------------
+//
+// On Entry:   r0    = U in IQ format
+//
+//
+// Regs Used:  r0-r3, r12
+//
+// On Exit:    r0    = sin(U)
+//
+//
+// Q range:    30 to 1
+//
+//-----------------------------------------------------------------------------
+//
+// Algorithm:  The procedure for calculating "Y = sin(U)" is as follows:
+//
+//      Step 1)  Normalize U to be within Quadrant I
+//
+//      Step 2)  Use upper 9 bits to lookup sin(index) and cos(index).
+//
+//      Step 3)  Use Taylor series to estimate sin(index+remainder).
+//               Up to 6 terms used, dependendent on Q
+//
+//      Note:   Index == 0 is handled as a special case.  It is a linear
+//              approximation with a slope just less than pi.  Value was
+//              chosen to minimize maximal error : +/-2 counts in Q30.
+//
+//##### INTERNAL BEGIN #####
+//-----------------------------------------------------------------------------
+// Future Work:
+//   As currently implemented, the residual is initialized to zero.
+//   A quick improvement would be to skip the initialization and fold it into
+//   the following add or rsb instruction.  This would be dependendant on Q.
+//   A better option may be to initialize it to 1/(2*n!)*{sin,cos}(index).
+//   This might allow us to fake out an entire order of the expansion as a
+//   pseudo constant, and save us a few multiplies.  Optimal value not yet
+//   calculated, it would have to be done similarly to the index == 0
+//   optimization.
+//
+//   Consider returning to a full-wave implementation (instead of quarter-wave)
+//   This would require signed math (2-3 cycle penalty per multiply, for SMULL
+//   vs UMULL, plus additional shifting/ rounding), but would eliminate
+//   the expensive setup / tear down of the function.  Would also eliminate
+//   special case handling.  If this path is chosen, center-align the Taylor-
+//   series.
+//
+//##### INTERNAL END #####
+//-----------------------------------------------------------------------------
+// Benchmark:
+//
+//  29 <= Q             : 82 Cycles
+//        Q  = 28       : 63 Cycles
+//  12 <= Q <= 27       : 50 Cycles
+//        Q  = 11       : 43 Cycles
+//   1 <= Q <= 10       : 22 Cycles
+//
+//*****************************************************************************
+__PREAMBLE__
+//*****************************************************************************
+//
+// The sin/cos table is used.
+//
+//*****************************************************************************
+    __IMPORT__ sincos_table
+
+//$ BEGIN_UNROLL _QQ_ 1 to 10
+//*****************************************************************************
+//
+// _IQ_QQ_sinPU
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_sinPU
+    __EXPORT__ _IQ_QQ_sinPU__THUMB_LABEL__
+_IQ_QQ_sinPU__LABEL__
+    //
+    // Load the table pointer into memory early, since we have more than
+    // enough registers to handle it.
+    //
+    ldr     r3, sincos_table__QQ_
+
+    //
+    // Put the input into Q31.
+    // Since this is in Cycles Per Unit, we only care about the 1s digit
+    // to determine sign of the result.  Higher bits are useless.
+    //
+    lsl     r0, r0, #(32 - _QQ_)
+
+    //
+    // If the fractional portion is greater than 0.5, subtract it from 1.0
+    // This is because sin(x) = sin(1-x) in cycles per unit , and we only store
+    // the [0,.5) in the table.
+    //
+    lsls    r1, r0, #2
+    it      cs
+        rsbcs   r0, r0, #0x80000000
+
+    //
+    // Remove the sign bit and store it in the carry flag
+    //
+    lsls    r0, r0, #1
+
+    //
+    // Lookup the value from the table.
+    //
+    ubfx    r1, r0, #(32 - 10), #10
+    ldr     r0, [r3, r1, lsl #2]
+
+    //
+    // Sign compensate, shift down for Q and round.
+    //
+    lsr     r0, r0, #1
+    it      cs
+        rsbcs   r0, r0, #0
+    asrs    r0, r0, #(31 - _QQ_)
+    adc     r0, r0, #0
+
+    //
+    // Return to the caller.
+    //
+    bx      lr
+
+    //
+    // The literal pool.
+    //
+    __LITERALS__
+sincos_table__QQ___LABEL__
+    __WORD__ sincos_table
+
+//$ END_UNROLL _QQ_
+//$ BEGIN_UNROLL _QQ_ 11 to 30
+//*****************************************************************************
+//
+// _IQ_QQ_sinPU
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_sinPU
+    __EXPORT__ _IQ_QQ_sinPU__THUMB_LABEL__
+_IQ_QQ_sinPU__LABEL__
+    //
+    // Put the input into Q31.
+    // Since this is in Cycles Per Unit, we only care about the 1s digit
+    // to determine sign of the result.  Higher bits are useless.
+    // This is equivalent to sin(x) = sin(x+2*n) in cycles per unit.
+    //
+    lsl     r0, r0, #(32 - _QQ_)
+
+    //
+    // If the fractional portion is greater than 0.5, subtract it from 1.0
+    // This is equivalent to sin(x) = sin(1-x) in cycles per unit.
+    //
+    //
+    lsls    r1, r0, #2
+    it      cs
+        rsbcs   r0, r0, #0x80000000
+    lsls    r0, r0, #1
+
+    //
+    // Use the top 9 fractional bits as an index into the look up table.
+    // Pull sine and cosine of the index.
+    // Jump out if we're close enough to 0 to do a fully odd approximation.
+    //
+    ldr     r12, sincos_table__QQ_
+    ubfx    r1, r0, #(31 - 9), #10
+    cbz     r1, sinPUindex0___QQ_
+    ldr     r2, [r12, r1, lsl #2]
+    rsb     r1, r1, #512
+    ldr     r3, [r12, r1, lsl #2]
+
+    //
+    // Put delta x in r1.
+    // This is (x-index)*pi/2  in Q32
+    // Consider replacing lsl/lsr combo with UBFX:
+    // 1 cycle faster, but slightly less accurate delta x.
+    //
+    lsl     r1, r0, #(9 + 1)
+    ldr     r12, piq30__QQ_
+    umull   r12, r1, r1, r12
+    lsr     r1, r1, #(9 - 1)
+    mov     r0, #0
+
+    //
+    // Calculates the taylor series expansion of sin(x)
+    // Interval is 0:90 degrees.
+    // Preconditions:
+    // r0 = 0x00000000
+    // r1 = remainder (x-index) in Q32 Radians
+    // r2 = sin(index) in Q32
+    // r3 = cos(index) in Q32
+    // r12 is available as scratch space
+    // ASPR contains sign flag as MI=flip sign.
+#if _QQ_ > 28
+    //
+    // Calculate 5th term of taylor series expansion.
+    // This performs y = remainder/5*(cos(index)-y)
+    // 8-12 cycles
+    //
+    sub     r0, r3, r0
+    umull   r12, r0, r0, r1
+    mov     r12, #0x33333333    // 2**32/5
+    umull   r12, r0, r12, r0
+
+#endif
+#if _QQ_ > 28
+    //
+    // Calculate 4th term of taylor series expansion.
+    // This performs y = remainder/4*(sin(index)+y)
+    // 5-7 cycles
+    //
+    add     r0, r2, r0
+    umull   r12, r0, r0, r1
+    lsr     r0, r0, #2
+
+#endif
+#if _QQ_ > 27
+    //
+    // Calculate 3rd term of taylor series expansion.
+    // This performs y = remainder/3*(cos(index)-y)
+    // 9-13 cycles
+    //
+    sub     r0, r3, r0
+    umull   r12, r0, r0, r1
+    mov     r12, #0x55555555    // 2**32/3
+    umull   r12, r0, r12, r0
+
+#endif
+#if _QQ_ > 11
+    //
+    // Calculate 2ND term of taylor series expansion.
+    // This performs y = remainder/2*(sin(index)+y)
+    // 5-7 cycles
+    //
+    add     r0, r2, r0
+    umull   r12, r0, r0, r1
+    lsr     r0, r0, #1
+
+#endif
+#if _QQ_ > 10
+    //
+    // Calculate 1st term of taylor series expansion.
+    // This performs y = remainder/1*(cos(index)-y)
+    // 4-6 cycles
+    sub     r0, r3, r0
+    umull   r12, r0, r0, r1
+
+#endif
+    //
+    // Calculate 0th term of taylor series expansion.
+    // This performs y = (sin(index)+y)
+    //
+    add     r0, r2, r0
+
+    //
+    // Compensate for sign flag in r5
+    //
+    lsr     r0, r0, #1
+    it      cs
+        rsbcs   r0, r0, #0
+    asrs    r0, r0, #(31 - _QQ_)
+    adc     r0, r0, #0
+
+    //
+    // Return to the caller.
+    //
+    bx      lr
+
+    //
+    // This branch handles the case very close to 0.
+    // It uses the sin(x)=x approximation, but the constant is fudged down
+    // a bit from pi to minimize the maximum error to +/-2 counts at Q30
+    //
+sinPUindex0___QQ___LABEL__
+    ldr     r12, piq30_compensated__QQ_
+    umull   r12, r0, r0, r12
+#if _QQ_ < 30
+    lsr     r0, r0, #(30 - _QQ_)
+#endif
+    it      cs
+        rsbcs   r0, r0, #0
+    bx      lr
+
+    //
+    // The literal pool.
+    //
+    __LITERALS__
+sincos_table__QQ___LABEL__
+    __WORD__ sincos_table
+piq30__QQ___LABEL__
+    __WORD__ 0xc90fdaa2
+piq30_compensated__QQ___LABEL__
+    __WORD__ 0xc90fcd37
+
+//$ END_UNROLL _QQ_
+    __END__

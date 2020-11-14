@@ -1,0 +1,207 @@
+//*****************************************************************************
+//
+// IQdiv.S - Fixed-point divide.
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// Function:   _IQNdiv
+//
+//*****************************************************************************
+//
+// C Usage:    extern long _IQNdiv(long Num, long Den);
+//
+//-----------------------------------------------------------------------------
+//
+// On Entry:   r0     = Numerator in IQ format
+//             r1     = Denominator in IQ format
+//
+// Regs Used:  r0-r6
+//
+// On Exit:    r0     = Num/Den result in IQ format
+//                    = 0x7FFFFFFF if +ve overflow
+//                    = 0x80000000 if -ve overflow
+//                    = 0x7FFFFFFF if Den == 0
+//
+// Q range:    30 to 1
+//
+//-----------------------------------------------------------------------------
+//
+// Algorithm:  The procedure for calculating Y = N/D is as follows:
+//
+//  Step 0)   Handle exceptions - divide by zero, overflow.
+//  Step 1)   Put operands in unsigned notation
+//  Step 2)   Shift numerator / remainder to fill MSB
+//            Shift partial answer to match
+//  Step 3)   32x32 bit divide.
+//            Add quotient to partial answer
+//            Find remainder
+//  Step 4)   Repeat until Q shifts have been accomplished.
+//  Step 5)   Put result back into signed notation
+//
+//##### INTERNAL BEGIN #####
+//-----------------------------------------------------------------------------
+//
+// Benchmark:  ??
+//
+//##### INTERNAL END #####
+//*****************************************************************************
+__PREAMBLE__
+//$ BEGIN_UNROLL _QQ_ 1 to 30
+//*****************************************************************************
+//
+// _IQ_QQ_div
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_div
+    __EXPORT__ _IQ_QQ_div__THUMB_LABEL__
+_IQ_QQ_div__LABEL__
+    //
+    // Test for divide by zero.  Bail with positive overflow if so.
+    //
+    teq     r1, #0
+    itt     eq
+        mvneq   r0, #0x80000000
+        bxeq    lr
+
+    //
+    // Save scratch registers
+    //
+    push    {r4, lr}
+
+    // Save sign of result to lr
+    //
+    mov     lr, #1
+    teq     r0, r1
+        it      mi
+        movmi   lr, #0
+
+    //
+    // Put operands into unsigned notation
+    //
+    cmp     r0, #0
+        it      mi
+        rsbmi   r0, r0, #0
+    cmp     r1, #0
+        it      mi
+        rsbmi   r1, r1, #0
+    //
+    //
+    // First Division
+    // The first divide instruction is special, it includes some
+    // of the register re-arranging and does overflow checking.
+    //
+    // Check how many bits can be handled in this first division
+    // If all Q bits can be produced, bail early to divfinished
+    //
+    clz     r4, r0
+    cmp     r4, #_QQ_
+        it      ge
+        movge   r4, #_QQ_
+    lsl     r2, r0, r4
+    rsb     r12, r4, #_QQ_
+
+    //
+    // r0 contains numerator, dirty
+    // r1 contains denominator
+    // r2 contains normalized numerator
+    // r3 is dirty
+    // r4 contains shiftable zeros, dirty
+    // r12 contains the number of additional shifts required
+    // lr contains sign flag.
+    //
+    // Perform the first division.
+    //
+    udiv    r0, r2, r1
+
+    //
+    // Check for overflow.
+    // If overflow occurs, return 0x7F... or 0x80.. based on lr (sign flag).
+    // Note that this assumes that the magnitude of the number is found on the
+    // first shift.  This assumption has been empirically proven for
+    // for all 10 bit numbers.
+    //
+    clz     r3, r0
+    cmp     r12, r3
+        itt     ge
+        rsbge   r0, lr, #0x80000000
+        popge   {r4, pc}
+
+    //
+    // Find the remainder and put it in r2 for future operations.
+    //
+    mls     r2, r1, r0, r2
+
+    //
+    // Determine how much to shift by.  This is the minimum of
+    // the number of leading zeros and the number of shifts left
+    // If this is the final divide, jump to the tail.
+    //
+    clz     r4, r2
+    cmp     r4, r12
+    bge     divfinished_QQ_
+
+    //
+    // Middle Divisions
+    // This loop holds all the divisions other than the head and tail
+    //
+    // Assumptions:
+    // r0 = partial answer            r1 = denominator
+    // r2 = remainder, unshifted      r3 = dirty
+    // r4 = #shifts this iteration    r12 = remaining shifts needed
+    //
+    // Prepare for the divide by normalizing remainder.
+    //
+divmore_QQ___LABEL__
+        sub     r12, r12, r4
+        lsl     r2, r2, r4
+        lsl     r0, r0, r4
+
+        //
+        // Perform the divide
+        // We already know that an additional step is required, so do the
+        // remainder calculation as well.
+        //
+        udiv    r3, r2, r1
+        mls     r2, r1, r3, r2
+        add     r0, r3, r0
+
+        //
+        // Divide finished, update shift counters for next divide.
+        // re-loop if more operations are needed.
+        //
+        clz     r4, r2
+        cmp     r4, r12
+    ble   divmore_QQ_
+
+    //
+    // Final Divide (Tail Divide)
+    // Performs the last divide in the sequence, restores scratch registers,
+    // adjusts sign bit.
+    //
+    // Assumptions:
+    // r0 = partial answer            r1 = denominator
+    // r2 = remainder, unshifted      r3 = dirty
+    // r4 = dirty                     r12 = remaining shifts needed
+    //
+divfinished_QQ___LABEL__
+    lsl     r2, r2, r12
+    lsl     r0, r0, r12
+    udiv    r3, r2, r1
+    add     r0, r3, r0
+    teq     lr, #0
+        it      eq
+        rsbeq   r0, r0, #0
+    pop     {r4, pc}
+
+    //
+    // Make sure that the end of the section is word aligned.
+    //
+    __ALIGN__
+
+//$ END_UNROLL _QQ_
+    __END__

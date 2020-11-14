@@ -1,0 +1,134 @@
+//*****************************************************************************
+//
+// IQtoD.S - Convert IQ to Double Precision Float
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// Function:   _IQNtoD
+//
+//*****************************************************************************
+//
+// C Usage:    extern double _IQtoD(long A);   // no round or sat
+//
+//-----------------------------------------------------------------------------
+//
+// On Entry:   ACC    = A in IQ format
+//
+// Regs Used:  XT, P
+//
+// On Exit:    {r0,r1} = IEEE 754 double precision floating-point
+//                       equivalent of A
+//
+// Q range:    30 to 1
+//
+//-----------------------------------------------------------------------------
+//
+// Algorithm:  This operation converts an IQ number to the equivalent
+//             IEEE 754 Double-Precision floating-point format. This
+//             format is shown below:
+//
+//              63  62            52 51                            32
+//              31  30            20 19                             0
+//             +-----------------------------------------------------+
+//      r1     | s |      e         |             f                  |
+//             +-----------------------------------------------------+
+//
+//              31                                                  0
+//             +-----------------------------------------------------+
+//      r0     |                          f                          |
+//             +-----------------------------------------------------+
+//
+//             Value = (-1)^s * 2^(e-1023) * 1.f
+//
+//             where: e = 1 to 2046, f = 0.000000000 to ~1.0
+//                    e = 0, f = 0, s = 0, Value = 0.0
+//                    e = 0 and f != 0 case cannot occur in IQmath
+//                    e = 2047 case cannot occur in IQmath
+//
+//##### INTERNAL BEGIN #####
+//-----------------------------------------------------------------------------
+// Benchmark:
+//
+// Cycles = ??
+//
+//##### INTERNAL END #####
+//*****************************************************************************
+__PREAMBLE__
+//$ BEGIN_UNROLL _QQ_ 1 to 30
+//*****************************************************************************
+//
+// _IQ_QQ_toD
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_toD
+    __EXPORT__ _IQ_QQ_toD__THUMB_LABEL__
+_IQ_QQ_toD__LABEL__
+    //
+    // The only special case to cover is if the operand is zero. All other
+    // special cases can not be reached from IQmath, as they are unable to be
+    // represented.
+    //
+    cbz     r0, r0isZero_QQ_
+
+    //
+    // Prepare working register r1 with sign
+    // Take absolute value of input
+    //
+    ands    r1, r0, #0x80000000
+        it      mi
+        rsbmi   r0, r0, #0
+
+    //
+    // Prepare exponent portion in r3
+    // This is calculated as follows:
+    //    +1023 per the definition from IEEE 754
+    //    +31-Q to compensate hidden shift from IQ
+    //    -r3 = the number of leading zeros
+    //
+    clz     r3, r0
+    rsb     r2, r3, #(31 - _QQ_)
+    add     r2, r2, #1023
+
+    //
+    // Prepare normalized mantissa.
+    //
+    lsl     r12, r0, r3
+    lsl     r0, r12, #21
+    lsr     r12, r12, #11
+
+    //
+    // Insert exponent bits.
+    // This over-writes the extraneous leading 1 in bit 23
+    //
+    bfi     r12, r2, #20, #11
+
+    //
+    // OR Sign bit back into result.
+    //
+    orr     r1, r1, r12
+
+    //
+    // Return
+    //
+    bx      lr
+
+    //
+    // If the input is 0, the resulting response is {0,0}.  Since r0 is already
+    // correct, only r1 needs to be modified.
+    //
+r0isZero_QQ___LABEL__
+    mov     r1, #0
+    bx      lr
+
+    //
+    // Make sure that the end of the section is word aligned.
+    //
+    __ALIGN__
+
+//$ END_UNROLL _QQ_
+    __END__

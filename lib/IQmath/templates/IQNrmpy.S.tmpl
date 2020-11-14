@@ -1,0 +1,82 @@
+//*****************************************************************************
+//
+// IQrmpy.S - Fixed point multiply with rounding (no saturation)
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// Function:   _IQNrmpy
+//
+//*****************************************************************************
+//
+// C Usage:    extern long _IQNrmpy(long M, long X); // with rounding only
+//
+//-----------------------------------------------------------------------------
+//
+// On Entry:   r0     = A in IQ format
+//             r1     = B in IQ format
+//
+// Regs Used:  r0, r1
+//
+// On Exit:    r0     = A*B stored as IQ
+//
+// Q range:    30 to 1
+//
+//-----------------------------------------------------------------------------
+//
+// Algorithm:  The integer portion of the IQ*I32 number is calculated
+//             as follows:
+//
+//                result = (A*B >> q_value)+result[-1];
+//
+//-----------------------------------------------------------------------------
+//
+// Benchmark:
+//
+// Cycles = 5-9 cycles, not counting call
+//
+//*****************************************************************************
+__PREAMBLE__
+//$ BEGIN_UNROLL _QQ_ 1 to 30
+//*****************************************************************************
+//
+// _IQ_QQ_rmpy
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_rmpy
+    __EXPORT__ _IQ_QQ_rmpy__THUMB_LABEL__
+_IQ_QQ_rmpy__LABEL__
+    //
+    // Perform a 32x32-> 64 bit signed multiply
+    //
+    smull   r0, r1, r0, r1
+
+    //
+    // Shift the lower 32 bits of the result down by Q
+    // Also, update Carry flag to indicate whether or not to round
+    //
+    lsrs    r0, r0, #_QQ_
+
+    //
+    // Shift the upper 32 by ~Q
+    // Add the upper and lower bits together
+    // Add the carry flag in to round
+    //
+    adc     r0, r0, r1, lsl #(32 - _QQ_)
+
+    //
+    // Return to the caller.
+    //
+    bx      lr
+
+    //
+    // Make sure that the end of the section is word aligned.
+    //
+    __ALIGN__
+
+//$ END_UNROLL _QQ_
+    __END__

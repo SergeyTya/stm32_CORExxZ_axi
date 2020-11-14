@@ -1,0 +1,198 @@
+/*
+* FreeModbus Libary: BARE Port
+* Copyright (C) 2006 Christian Walter <wolti@sil.at>
+*
+* This library is free software; you can redistribute it and/or
+* modify it under the terms of the GNU Lesser General Public
+* License as published by the Free Software Foundation; either
+* version 2.1 of the License, or (at your option) any later version.
+*
+* This library is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+* Lesser General Public License for more details.
+*
+* You should have received a copy of the GNU Lesser General Public
+* License along with this library; if not, write to the Free Software
+* Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*
+* File: $Id: portserial.c,v 1.1 2006/08/22 21:35:13 wolti Exp $
+*/
+
+#include "port.h"
+
+#include "MDR32F9Qx_uart.h"
+#include "MDR32F9Qx_port.h"
+#include "MDR32F9Qx_rst_clk.h"
+
+
+/* ----------------------- Modbus includes ----------------------------------*/
+#include "mb.h"
+#include "mbport.h"
+
+/* ----------------------- static functions ---------------------------------*/
+static void prvvUARTTxReadyISR( void );
+static void prvvUARTRxISR( void );
+
+/* ----------------------- Start implementation -----------------------------*/
+
+
+BOOL xMBPortSerialInit( UCHAR ucPORT, ULONG ulBaudRate, UCHAR ucDataBits, eMBParity eParity )
+{
+   (void) ucPORT;
+  UART_InitTypeDef UART_InitStructure;
+   UART_StructInit(&UART_InitStructure);
+   UART_BRGInit(MB_UART, UART_HCLKdiv1);
+   /* Initialize UART_InitStructure */
+  UART_InitStructure.UART_BaudRate                = ulBaudRate/1; // дл€ кварца 16 м√ц
+  UART_InitStructure.UART_WordLength              = UART_WordLength8b;
+  UART_InitStructure.UART_StopBits                = UART_StopBits1;
+  UART_InitStructure.UART_Parity                  = UART_Parity_No;
+  UART_InitStructure.UART_FIFOMode                = UART_FIFO_ON;
+  UART_InitStructure.UART_HardwareFlowControl     = 0x0;
+
+  /* Configure UART1 parameters*/
+  UART_Init (MB_UART,&UART_InitStructure);
+  UART_DMAConfig (MB_UART, UART_IT_FIFO_LVL_14words, UART_IT_FIFO_LVL_2words);
+  
+  /*перезар€дка буфера*/
+    while(UART_GetFlagStatus (MB_UART, UART_FLAG_TXFF)!=SET) {UART_SendData (MB_UART,0xFF);}; 
+  
+ UART_ITConfig (MB_UART, UART_IT_RX, DISABLE);
+ UART_ITConfig (MB_UART, UART_IT_TX, DISABLE);
+ UART_ITConfig (MB_UART, UART_IT_OE, DISABLE);
+ UART_ITConfig (MB_UART, UART_IT_RT ,ENABLE);
+ 
+   NVIC_SetPriority(MB_UART_IRQn, MB_IRQ_PRTY);
+   NVIC_EnableIRQ(MB_UART_IRQn);
+   MB_UART->CR=0x00000301;
+   while(UART_GetFlagStatus (MB_UART,  UART_FLAG_BUSY )==SET){};
+   
+
+  PORT_InitTypeDef PortInit; 
+     /* Fill PortInit structure */
+  PortInit.PORT_PULL_UP = PORT_PULL_UP_OFF;
+  PortInit.PORT_PULL_DOWN = PORT_PULL_DOWN_OFF;
+  PortInit.PORT_PD_SHM = PORT_PD_SHM_OFF;
+  PortInit.PORT_PD = PORT_PD_DRIVER;
+  PortInit.PORT_GFEN  = PORT_GFEN_OFF;
+  PortInit.PORT_FUNC  = MB_UART_PORT_FUNC;
+  PortInit.PORT_SPEED = PORT_SPEED_MAXFAST;
+  PortInit.PORT_MODE  = PORT_MODE_DIGITAL;
+
+  /* Configure (UART_TX) as output */
+  PortInit.PORT_OE = PORT_OE_OUT;
+  PortInit.PORT_Pin = MB_UART_Tx_Pin;
+  PORT_Init(MB_UART_PORT, &PortInit);
+
+  /* Configure (UART1_RX) as input */
+  PortInit.PORT_OE = PORT_OE_IN;
+  PortInit.PORT_Pin = MB_UART_Rx_Pin;
+  
+  PORT_Init(MB_UART_PORT, &PortInit);
+
+
+  /*конфигураци€ пин управлени€ RS485*/
+  
+#if MODBUS_CPIN_ENABLE  > 0     
+ PORT_InitTypeDef PORT_InitStructure; 
+ PORT_InitStructure.PORT_Pin   = (RS485_CNTRL_PIN);
+ PORT_InitStructure.PORT_OE    = PORT_OE_OUT;
+ PORT_InitStructure.PORT_FUNC  = PORT_FUNC_PORT;
+ PORT_InitStructure.PORT_MODE  = PORT_MODE_DIGITAL;
+ PORT_InitStructure.PORT_SPEED = PORT_SPEED_FAST;
+ PORT_Init(RS485_CNTRL_PORT, &PORT_InitStructure);
+ PORT_ResetBits(RS485_RW_Pin);
+#endif
+   
+  return TRUE;
+}
+
+void vMBPortSerialEnable( BOOL xRxEnable, BOOL xTxEnable )
+{
+  if(xRxEnable == TRUE)
+  {
+    UART_ITConfig(MB_UART, UART_IT_RX, ENABLE);
+     UART_ITConfig (MB_UART, UART_IT_RT ,ENABLE);
+  }
+  else
+  {
+    UART_ITConfig(MB_UART, UART_IT_RX, DISABLE);
+     UART_ITConfig (MB_UART, UART_IT_RT ,DISABLE);
+  } 
+  
+  if(xTxEnable == TRUE)
+  {
+   UART_ITConfig(MB_UART, UART_IT_TX, ENABLE);
+  }
+  else
+  {
+    UART_ITConfig(MB_UART, UART_IT_TX, DISABLE);
+  }
+}
+
+BOOL xMBPortSerialPutByte( CHAR ucByte )
+{
+
+  UART_SendData (MB_UART,(uint16_t) ucByte);
+  return TRUE;
+}
+
+BOOL xMBPortSerialGetByte( CHAR * pucByte )
+{
+  *pucByte = UART_ReceiveData(MB_UART);
+  return TRUE;
+}
+
+void UART2_IRQHandler(void)  //ѕќћ≈Ќя… Ќќћ≈– ”ј–“!!!!!!!!!!!
+{ 
+   /* прерывание по уровню фифо приемника (заполнение) - читаем два раза*/
+  if ( UART_GetITStatus( MB_UART, UART_IT_RX )==SET)   
+   {
+       UART_ClearITPendingBit( MB_UART, UART_IT_RX);
+       pxMBFrameCBByteReceived();// pxMBFrameCBByteReceived();
+   }  
+   /* прерывание по таймауту приемника - читаем данные модбас */
+   if (UART_GetITStatus( MB_UART, UART_IT_RT )==SET)     
+   {
+     
+       UART_ClearITPendingBit( MB_UART, UART_IT_RT);
+       while(UART_GetFlagStatus (MB_UART, UART_FLAG_RXFE)!=SET)
+        pxMBFrameCBByteReceived();
+         (void) pxMBPortCBTimerExpired();      
+   }   
+    /* прерывание по переполнению буфера - ошибка! */
+    if (UART_GetITStatus( MB_UART, UART_IT_OE )==SET)      
+   {
+       UART_ClearITPendingBit( MB_UART, UART_IT_OE);
+      /*ƒќЅј¬№ ќЎ»Ѕ ” —ёƒј*/
+   }   
+  
+    /*прерывание по опустошению буфера передатчика - пишем данные в порт */
+  if ( UART_GetITStatusMasked( MB_UART, UART_IT_TX )== SET ) 
+    { 
+#if MODBUS_CPIN_ENABLE  > 0
+    PORT_SetBits(RS485_RW_Pin);  
+#endif
+    while(UART_GetFlagStatus (MB_UART, UART_FLAG_TXFF)!=SET &&  MB_UART->IMSC&(1<<5)) 
+      pxMBFrameCBTransmitterEmpty();
+    /* запуск таймера дл€ отслеживани€ окончани€ передачи*/
+    if( (MB_UART->IMSC&(1<<5))!=1 )SysTick->CTRL|=(1<<0)|(1<<1)|(1<<2); 
+   // UART_ClearITPendingBit( MB_UART, UART_IT_TX );  не включать!!!!!
+    }   
+ 
+  NVIC_ClearPendingIRQ(MB_UART_IRQn);  
+}
+
+
+void SysTick_Handler(void)
+{
+   /* проверка окончани€ передачи*/
+   if(UART_GetFlagStatus (MB_UART,  UART_FLAG_BUSY )!=SET)
+   {
+#if MODBUS_CPIN_ENABLE  > 0
+         PORT_ResetBits(RS485_RW_Pin ) ;
+#endif
+    SysTick->CTRL=0;}
+}
+

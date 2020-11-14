@@ -1,0 +1,171 @@
+//*****************************************************************************
+//
+// IQexp2.S - Fixed point 2^x
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// Function:   _IQNexp2
+//
+//*****************************************************************************
+//
+// C Usage:    extern long _IQNexp2(long X); // with saturation and rounding
+//
+//-----------------------------------------------------------------------------
+//
+// On Entry:   r0     = Val in IQ format
+//
+// Regs Used:  r0-r3, r12
+//
+// On Exit:    r0     = 2^x result in IQ format
+//             r0     = max value "0x7FFFFFFF" if result saturates
+//
+// Q range:    30 to 1
+//
+//-----------------------------------------------------------------------------
+//
+// Algorithm:
+//
+//      Step 1)  Separate the fractional and integer portion of the input. The
+//               The integer portion is saved for step 4.  If it will saturate,
+//               bail out now.
+//
+//      Step 2)  Calculate 2^frac(x) using a 7th order polynomial.  The
+//               coefficients have been selected to minimize the maximal error
+//               over the range of x=[0,1].  Please see the attached python
+//               script that was used to find these optimal coefficients.
+//               Using these coefficients, rather than a Taylor series, allows
+//               us to use ~3-4 fewer terms in the expansion with similar
+//               accuracy.
+//
+//      Step 3)  Shift result of step 3 per the integer portion of the input.
+//               Saturate and round as appropriate.
+//
+//##### INTERNAL BEGIN #####
+//-----------------------------------------------------------------------------
+//
+// Future Work:
+//   It may be possible to reduce the number of terms in the approximating
+//   polynomial for small values of Q.  (It has been proven that this is the
+//   minimal size to achieve +/-2 counts at Q30).  Note that the coefficients
+//   would need to be reoptimized for each set, because they all have positive
+//   signs.
+//
+//   Also, some accuracy vs time may be recoverable by calculating the
+//   polynomial in Q31 instead of Q30.  However, overflow will need to be
+//   checked more carefully.  The current set was chosen to guarantee a lack
+//   of overflow so that the code did not have to do expensive checking.
+//
+//##### INTERNAL END #####
+//-----------------------------------------------------------------------------
+//
+// Benchmark:
+//      Typical     : 72 Cycles
+//      Overflow    : 14 Cycles
+//
+//*****************************************************************************
+__PREAMBLE__
+//$ BEGIN_UNROLL _QQ_ 1 to 30
+//*****************************************************************************
+//
+// _IQ_QQ_exp2
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_exp2
+    __EXPORT__ _IQ_QQ_exp2__THUMB_LABEL__
+_IQ_QQ_exp2__LABEL__
+    //
+    // Calculate the final shift required.
+    // This calculation is (integer portion of X)-(30-Q)
+    // If this is negative, it will cause saturation later: bail now.
+    //
+    asr     r12, r0, #_QQ_
+    rsbs    r12, r12, #(30 - _QQ_)
+    bmi     exp_saturation__QQ_
+    lsl     r1, r0, #(32 - _QQ_)
+
+    //
+    // Calculate the approximating polynomial.
+    // R0 Result in Q30
+    // R1 X, fractional portion in Q32
+    // R2 Coefficient
+    // R3 Multiplication scratch space.
+    //
+    ldr     r2, coefficient_7__QQ_
+    umull   r3, r0, r2, r1
+    ldr     r2, coefficient_6__QQ_
+    add     r0, r0, r2
+    umull   r3, r0, r0, r1
+    ldr     r2, coefficient_5__QQ_
+    add     r0, r0, r2
+    umull   r3, r0, r0, r1
+    ldr     r2, coefficient_4__QQ_
+    add     r0, r0, r2
+    umull   r3, r0, r0, r1
+    ldr     r2, coefficient_3__QQ_
+    add     r0, r0, r2
+    umull   r3, r0, r0, r1
+    ldr     r2, coefficient_2__QQ_
+    add     r0, r0, r2
+    umull   r3, r0, r0, r1
+    ldr     r2, coefficient_1__QQ_
+    add     r0, r0, r2
+    umull   r3, r0, r0, r1
+    ldr     r2, coefficient_0__QQ_
+    add     r0, r0, r2
+
+    //
+    // Shift answer down per previously calculated value and round.
+    //
+    lsrs    r0, r0, r12
+    adc     r0, r0, #0
+
+    //
+    // The shift instruction above will incorrectly handle large shift values
+    // and ignore everything past the first byte. This will sometimes cause
+    // large negative inputs to incorrectly give a non zero answer. This will
+    // explicitly find these cases and zero them out.
+    //
+    lsrs    r12, r12, #5
+    it      ne
+        movne   r0, #0
+
+    //
+    // Return
+    //
+    bx    lr
+
+    //
+    // Handles the case where the result saturates.
+    //
+exp_saturation__QQ___LABEL__
+    mvn   r0, #0x80000000
+    bx    lr
+
+    //
+    // The literal pool.
+    //
+    __LITERALS__
+coefficient_0__QQ___LABEL__
+    __WORD__ 0x3ffffffe
+coefficient_1__QQ___LABEL__
+    __WORD__ 0x2c5c861c
+coefficient_2__QQ___LABEL__
+    __WORD__ 0x0f5fde0f
+coefficient_3__QQ___LABEL__
+    __WORD__ 0x038d669b
+coefficient_4__QQ___LABEL__
+    __WORD__ 0x009d817b
+coefficient_5__QQ___LABEL__
+    __WORD__ 0x00160186
+coefficient_6__QQ___LABEL__
+    __WORD__ 0x00025756
+coefficient_7__QQ___LABEL__
+    __WORD__ 0x00005ae7
+
+//$ END_UNROLL _QQ_
+    __END__

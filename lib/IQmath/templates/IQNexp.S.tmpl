@@ -1,0 +1,294 @@
+//*****************************************************************************
+//
+// IQexp.S - Fixed point e^x
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// Function:   _IQNexp
+//
+//*****************************************************************************
+//
+// C Usage:    extern long _IQNexp(long X); // with saturation and rounding
+//
+//-----------------------------------------------------------------------------
+//
+// On Entry:   r0     = Val in IQ format
+//
+// Regs Used:  r0-r3, r12
+//
+// On Exit:    r0     = e^x result in IQ format
+//             r0     = max value "0x7FFFFFFF" if result saturates
+//
+// Q range:    30 to 1
+//
+//-----------------------------------------------------------------------------
+//
+// Algorithm:
+//
+//      Step 0)  Multiply the input by log(2).  This allows us to perform the
+//               remaining calculations as 2^x, which has nice properties.
+//
+//      Step 1)  Separate the fractional and integer portion of the input. The
+//               The integer portion is saved for step 3.  If it will saturate,
+//               bail out now.
+//
+//      Step 2)  Calculate 2^frac(x) using a 7th order polynomial.  The
+//               coefficients have been selected to minimize the maximal error
+//               over the range of x=[0,1].  Please see the attached python
+//               script that was used to find these optimal coefficients.
+//               Using these coefficients, rather than a Taylor series, allows
+//               us to use ~3-4 fewer terms in the expansion with similar
+//               accuracy.  Note that these coefficients are slightly different
+//               than the ones used for exp2 and should not be used
+//               interchangeably.
+//
+//      Step 3)  Shift result of step 3 per the integer portion of the input.
+//               Saturate and round as appropriate.
+//
+//##### INTERNAL BEGIN #####
+//-----------------------------------------------------------------------------
+//
+// Future Work:
+//   I estimate that there are on the order of 3-6 cycles that can be
+//   recovered from this algorithm by re-arranging some of the registers in
+//   the interaction between steps 0 and 1.
+//
+//   The multiplication by 1/ln(2) is currently implemented as a
+//   post-compensated unsigned multiply.  Implementing it as a signed multiply
+//   would remove the .reapply_sign_ branch, and would likely obviate the
+//   clean up code surrounding it.
+//
+//##### INTERNAL END #####
+//-----------------------------------------------------------------------------
+//
+// Benchmark:
+//      Overflow  :           38 Cycles
+//      Large Positive Input: 96 Cycles
+//      Large Negative Input: 98 Cycles
+//      Small Positive Input: 96 Cycles
+//      Small Negative Input: 96 Cycles
+//
+//*****************************************************************************
+__PREAMBLE__
+//$ BEGIN_UNROLL _QQ_ 1 to 30
+//*****************************************************************************
+//
+// _IQ_QQ_exp
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_exp
+    __EXPORT__ _IQ_QQ_exp__THUMB_LABEL__
+_IQ_QQ_exp__LABEL__
+    //
+    // Take the absolute value of the input.
+    //
+    teq     r0, #0
+    it      mi
+        rsbmi   r0, r0, #0
+
+    //
+    // Multiply input by 1/log(2). This transforms the problem from e^x to 2^x
+    // The register set {r0,r2,r3} represents X in GQ-2 format.
+    //
+    ldr     r12, one_over_ln_2_2__QQ_
+    mov     r1, #0
+    umull   r3, r2, r12, r0
+    ldr     r12, one_over_ln_2_1__QQ_
+    umlal   r2, r1, r12, r0
+
+#if _QQ_ == 1
+    //
+    // Place fractional portion of input in r3 in Q32
+    //
+    lsl     r3, r3, #31
+    orr     r3, r3, r2, lsl #1
+
+    //
+    // Reapply the sign of the input.
+    //
+    bpl     reapply_sign__QQ_
+
+    //
+    // For Q=1 or Q=2, it is more effective to explicitly test for the single
+    // case in which we generate a carry into the shift value: X = 0xFFFFFFFE
+    // In this special case, return early with the precomputed answer.
+    // For all other cases, the inaccuracy created by doing this is masked by
+    // the low resolution of such a low value of Q.
+    //
+    teq     r0, #2
+    itt     eq
+        moveq   r0, #1
+        bxeq    lr
+    rsb     r3, r3, #0
+    rsb     r1, r1, #0
+
+    //
+    // Calculate the final shift required.
+    // This calculation is (integer portion of X)-(30-Q)
+    // If this is negative, it will cause saturation later: bail now.
+    //
+reapply_sign__QQ___LABEL__
+    lsl     r12, r1, #1
+    add     r12, r12, r2, lsr #31
+    rsbs    r12, r12, #(30 - _QQ_)
+    bmi     exp_saturation__QQ_
+    mov     r1, r3
+
+#endif
+#if _QQ_ == 2
+    //
+    // Place fractional portion of input in r3 in Q32
+    //
+    mov     r3, r2
+
+    //
+    // Reapply the sign of the input.
+    //
+    bpl     reapply_sign__QQ_
+
+    //
+    // For Q=1 or Q=2, it is more effective to explicitly test for the single
+    // case in which we generate a carry into the shift value: X = 0xFFFFFFFE
+    // In this special case, return early with the precomputed answer.
+    // For all other cases, the inaccuracy created by doing this is masked by
+    // the low resolution of such a low value of Q.
+    //
+    teq     r0, #2
+    itt     eq
+        moveq   r0, #2
+        bxeq    lr
+    rsb     r1, r1, #0
+
+    //
+    // Calculate the final shift required.
+    // This calculation is (integer portion of X)-(30-Q)
+    // If this is negative, it will cause saturation later: bail now.
+    //
+reapply_sign__QQ___LABEL__
+    rsbs    r12, r1, #(30 - _QQ_)
+    bmi     exp_saturation__QQ_
+    mov     r1, r3
+
+#endif
+#if _QQ_ > 2
+    //
+    // Place fractional portion of input in r1 in Q32
+    //
+    lsl     r3, r1, #(96 - (62 + _QQ_))
+    orr     r3, r3, r2, lsr #(_QQ_ - 2)
+
+    //
+    // Reapply the sign of the input.
+    //
+    bpl     reapply_sign__QQ_
+
+    rsbs    r3, r3, #0
+    it      mi
+        addmi   r1, r1, #(1 << (_QQ_ - 3))
+        rsb     r1, r1, #0
+
+    //
+    // Calculate the final shift required.
+    // This calculation is (integer portion of X)-(30-Q)
+    // If this is negative, it will cause saturation later: bail now.
+    //
+reapply_sign__QQ___LABEL__
+    asr     r12, r1, #(_QQ_ - 2)
+    rsbs    r12, r12, #(30 - _QQ_)
+    bmi     exp_saturation__QQ_
+    mov     r1, r3
+
+#endif
+    //
+    // Calculate the approximating polynomial.
+    // R0 Result in Q30
+    // R1 X, fractional portion in Q32
+    // R2 Coefficient
+    // R3 Multiplication scratch space.
+    //
+    ldr     r2, coefficient_7__QQ_
+    umull   r3, r0, r2, r1
+    ldr     r2, coefficient_6__QQ_
+    add     r0, r0, r2
+    umull   r3, r0, r0, r1
+    ldr     r2, coefficient_5__QQ_
+    add     r0, r0, r2
+    umull   r3, r0, r0, r1
+    ldr     r2, coefficient_4__QQ_
+    add     r0, r0, r2
+    umull   r3, r0, r0, r1
+    ldr     r2, coefficient_3__QQ_
+    add     r0, r0, r2
+    umull   r3, r0, r0, r1
+    ldr     r2, coefficient_2__QQ_
+    add     r0, r0, r2
+    umull   r3, r0, r0, r1
+    ldr     r2, coefficient_1__QQ_
+    add     r0, r0, r2
+    umull   r3, r0, r0, r1
+    ldr     r2, coefficient_0__QQ_
+    adds    r0, r0, r2
+
+    //
+    // Shift answer down per previously calculated value and round.
+    // NOTE:  If r12 is zero, the carry bit will "stick" at whatever it was
+    // and will not be updated by lsrs.  This can cause one count of error in
+    // these cases.  The adds just above is intended to reset the carry to 0.
+    // This is likely unnecessary, as it helps less than 0.5% of the time. It
+    // incurs no cycle count penalty, so it stays for now.
+    //
+    lsrs    r0, r0, r12
+    adc     r0, r0, #0
+
+    //
+    // The shift instruction ignores the upper bits.  If those bits are set,
+    // set the output to 0 manually.
+    //
+    lsrs    r12, r12, #5
+    it      ne
+        movne   r0, #0
+
+    //
+    // Return to the caller.
+    //
+    bx      lr
+
+    //
+    // Handles the case where the result saturates.
+    //
+exp_saturation__QQ___LABEL__
+    mvn     r0, #0x80000000
+    bx      lr
+
+    //
+    // The literal pool.
+    //
+    __LITERALS__
+one_over_ln_2_1__QQ___LABEL__
+    __WORD__ 0x5c551d94
+one_over_ln_2_2__QQ___LABEL__
+    __WORD__ 0xae0bf85e
+coefficient_0__QQ___LABEL__
+    __WORD__ 0x3fffffff
+coefficient_1__QQ___LABEL__
+    __WORD__ 0x2c5c861b
+coefficient_2__QQ___LABEL__
+    __WORD__ 0x0f5fde0d
+coefficient_3__QQ___LABEL__
+    __WORD__ 0x038d669b
+coefficient_4__QQ___LABEL__
+    __WORD__ 0x009d817c
+coefficient_5__QQ___LABEL__
+    __WORD__ 0x00160186
+coefficient_6__QQ___LABEL__
+    __WORD__ 0x00025756
+coefficient_7__QQ___LABEL__
+    __WORD__ 0x00005ae9
+
+//$ END_UNROLL _QQ_
+    __END__

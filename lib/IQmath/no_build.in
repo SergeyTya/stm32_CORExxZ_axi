@@ -1,0 +1,16 @@
+#******************************************************************************
+#
+# no_build.in - Configuration information for the IQmath directory.
+#
+# Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+# TI Information - Selective Disclosure
+#
+#******************************************************************************
+
+NOBUILD=yes
+TARGET=IQmath
+ROOT=..
+COPYRIGHT=2010
+CR_EXCLUDE={(ccs|ewarm|gcc|rvmdk|sourcerygxx)}
+CR_EXCLUDE_INT={(gnu|iar|keil|ti|templates|IQtest|IQmath.in)}
+CS_EXCLUDE=*.c|*.in|*.pl|*.txt|gnu|iar|IQtest|keil|templates|ti

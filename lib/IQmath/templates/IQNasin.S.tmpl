@@ -1,0 +1,265 @@
+//******************************************************************************
+//
+// IQasin.S - Fixed point calculation of asin in radians
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// Function:   _IQNasin
+//
+//*****************************************************************************
+//
+// C Usage:    extern long _IQNasin(long x);
+//
+//-----------------------------------------------------------------------------
+//
+// On Entry:   r0    = x in IQ format in pirads
+//
+//
+// Regs Used:  r0-r3, r12
+//
+// On Exit:    r0    = asinPU(x)
+//
+//
+// Q range:    30 to 1
+//
+//-----------------------------------------------------------------------------
+//
+// Algorithm Theory:
+//
+//      Arcsine has a singularity at x=1 and x=-1. The derivative series
+//      asymptotically approaches infinity, which creates several problems:
+//          A) Since higher order terms become dominant, approximating with a
+//              low order polynomial requires a very dense look up table.
+//          B) As the terms approach infinity, fixed point approaches suffer
+//              extreme resolution loss.
+//      The C2000 approach eliminates the singularity at the cost of
+//      calculating sqrt by using the following identity:
+//              asin(x) = pi/2 - asin(sqrt(1-x^2))
+//
+//      This algorithm avoids the expense of sqrt by returning to a straight
+//      polynomial approximation, but has two significant details that address
+//      the problems listed above.
+//          A) Look-up table points are spaced semi-exponentially. That is,
+//              the range [0,.5) has the same number of points as [.5,.75) and
+//              [.75,.875). This allows us to appropriately shape
+//              the distribution.
+//          B) For each power of two segment - [0,.5), [.5,.75), etc - the
+//              input is rescaled to [.5,1). This brings the coefficients for
+//              higher order terms closer to the coefficients for lower order
+//              terms, especially near x=1. Specifically, it reduces the
+//              Nth term by 2^(N*L), where L = floor(log2(1-x)).  This also
+//              allows us to operate in Q32 through-out, with out requiring
+//              any floating operations.
+//      These transformations do require a bit of set up, but it is
+//      significantly quicker than the sqrt(1-x^2) transformation. This allows
+//      this implementation to reach roughly twice the throughput as the
+//      previous generation.
+//
+//---------------------------------------------------------------------------
+//
+// Algorithm:  The procedure for calculating "Y = asin(x)" is as follows:
+//
+//      Step 1)  Take the absolute value of x and store the original sign of x.
+//
+//      Step 2)  Put X in Q32 and subtract from 1.  All calculations moving
+//               forward are with respect to z=1-x
+//
+//      Step 3)  Find the index into the lookup table.  The index partially
+//               logarithmically spaced and partially linearly spaced.  This
+//               is done to place relatively more lookup points closer to the
+//               singularity at x=1
+//               Index = (clz(z)),z[31:27]
+//
+//      Step 4)  Calculate 4 term polynomial based on 1-X.  Look up
+//               coefficients during calculation to save memory.
+//
+//      Step 5)  Correct for Q, round, correct for sign.
+//
+//      Note:    x=0 is handles as a special case to allow for full Q32.
+//               It will simply bail out immediately, returning 0.
+//
+//-----------------------------------------------------------------------------
+//
+// Benchmark:
+//
+//        Q <= 30       : ?? Cycles
+//        Q <= 29       : ?? Cycles
+//  12 <= Q <= 28       : ?? Cycles
+//        Q  = 11       : ?? Cycles
+//   1 <= Q <= 10       : ?? Cycles
+//
+//******************************************************************************
+__PREAMBLE__
+//*****************************************************************************
+//
+// The asin tables are used.
+//
+//*****************************************************************************
+    __IMPORT__ asin_table_polynomial
+    __IMPORT__ asin_table_flat
+
+//$ BEGIN_UNROLL _QQ_ 1 to 29
+//*****************************************************************************
+//
+// _IQ_QQ_asin
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_asin
+    __EXPORT__ _IQ_QQ_asin__THUMB_LABEL__
+_IQ_QQ_asin__LABEL__
+    //
+    // Take the negative absolute value of the input, store sign in r12
+    // Taking the negative absolute value here saves 2 cycles later when we
+    // truncate and look into the look up table.
+    //
+    asrs    r12, r0, #32
+    it      pl
+        rsbpl   r0, r0, #0
+
+    //
+    // Put the input in Q32, truncating mercilessly.
+    // If the input is 0 or +/- 1, jump to a special handler.
+    // Note that this will also jump for 1<=|x|<2.
+    // We do not make any claims of what we return in |x|>1, so this is fine.
+    //
+    lsls    r0, r0, #(32 - _QQ_)
+    beq     input_is_zero_or_one__QQ_
+
+    //
+    // Generate the lookup table index
+    // This is given in a pseudo floating point format, with a 4 bit exponent
+    // and a 5 bit mantissa.  The leading one is  omitted.  For example, the
+    // number {N leading zeros, '1', A,B,C,D,etc} becomes  N,A,B,C,D
+    //
+    // This creates a table that has 16 entries of 4 words per log(2) chunk.
+    //
+    // Additionally, this section massages the input by the algorithm
+    // described above. Briefly, z = (1-x) * 2^-floor(log2(1-x)).
+    //
+    // Since we use 64 words per bit, the last log2(64) = 6 bits are done
+    // as a direct look up table to save space.
+    //
+    clz     r2, r0
+    cmp     r2, #24
+    bge     direct_lookup__QQ_
+    lsl     r0, r0, r2
+    rsb     r1, r0, #-1
+    lsr     r3, r1, #(32 - 5)
+    bfi     r3, r2, #4, #5
+
+    //
+    // Point into the table with r3
+    //
+    ldr     r2, asin_table_polynomial__QQ_
+    add     r3, r2, r3, lsl #4
+
+    //
+    // Calculate the cubic approximating Polynomial
+    // y = c0 + c1*x + c2*x^2 + c3*x^3
+    //
+    // Due to the transformation above, we can make the following assumptions:
+    //      The magnitudes of c0-c3 are always less than 1.0
+    //      c0 and c2 are always positive
+    //      c1 and c3 are always negative
+    //      x is always less than 1.0
+    // This allows us to calculate the polynomial in unsigned Q32.Q32, which
+    // provides a modest speed improvement over using e.g. signed Q31.
+    //
+    // The polynomial is re-arranged and calculated as follows:
+    //      y =  c3 * x
+    //      y = (c2 - y ) * x
+    //      y = (c1 - y ) * x
+    //      y = (c0 - y )
+    //
+    // r0 = x in UQ32
+    // {r1,r2} = y
+    // r3 = pointer to table
+    // r4 = loaded coefficient
+    //
+    push    {lr}
+
+    //
+    // y =  c3 * x
+    //
+    ldr     lr, [r3]
+    umull   r1, r2, r0, lr
+
+    //
+    // y = (c2 - y ) * x
+    //
+    ldr     lr, [r3, #4]!
+    sub     lr, lr, r2
+    umull   r1, r2, r0, lr
+
+    //
+    // y = (c1 - y ) * x
+    //
+    ldr     lr, [r3, #4]!
+    sub     lr, lr, r2
+    umull   r1, r2, r0, lr
+
+    //
+    // y = (c0 - y )
+    //
+    ldr     lr, [r3, #4]!
+    sub     r0, lr, r2
+
+    //
+    // r0 now contains the result in UQ30
+    // Normalize for Q and apply sign.
+    //
+#if _QQ_ < 30
+    lsr     r0, r0, #(30 - _QQ_)
+#endif
+    teq     r12, #0
+    it      ne
+        rsbne   r0, r0, #0
+
+    //
+    // Return to the caller.
+    //
+    pop     {pc}
+
+    //
+    // Perform a direct lookup of the value.
+    //
+direct_lookup__QQ___LABEL__
+    ldr     r1, asin_table_flat__QQ_
+    ldr     r0, [r1, r0]
+    lsr     r0, r0, #(31 - _QQ_)
+    bx      lr
+
+    //
+    // Special case handling of the value being 0 or 1.
+    //
+input_is_zero_or_one__QQ___LABEL__
+    //
+    // If the input was zero, return 0.  r0 is already appropriately set.
+    //
+    it      cc
+    bxcc    lr
+    ldr     r0, piq30__QQ_
+    lsr     r0, r0, #(30 - _QQ_ + 1)
+    teq     r12, #0xFFFFFFFF
+    it      eq
+        rsbeq   r0, r0, #0
+    bx      lr
+
+    //
+    // The literal pool.
+    //
+    __LITERALS__
+piq30__QQ___LABEL__
+    __WORD__ 0xc90fdaa2         // pi in Q30
+asin_table_polynomial__QQ___LABEL__
+    __WORD__ asin_table_polynomial
+asin_table_flat__QQ___LABEL__
+    __WORD__ asin_table_flat - 4
+
+//$ END_UNROLL _QQ_
+        __END__

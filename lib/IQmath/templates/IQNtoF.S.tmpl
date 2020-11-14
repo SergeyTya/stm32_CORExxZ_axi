@@ -1,0 +1,117 @@
+//*****************************************************************************
+//
+// IQtoF.S - Convert IQ to Single Precision Float
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// Function:   _IQNtoF
+//
+//*****************************************************************************
+//
+// C Usage:    extern float _IQtoF(long A);   // no round or sat
+//
+//-----------------------------------------------------------------------------
+//
+// On Entry:   ACC    = A in IQ format
+//
+// Regs Used:  XT, P
+//
+// On Exit:    ACC    = IEEE 754 floating-point equivalent of A
+//
+// Q range:    30 to 1
+//
+//-----------------------------------------------------------------------------
+//
+// Algorithm:  This operation converts an IQ number to the equivalent
+//             IEEE 754 Single-Precision floating-point format. This
+//             format is shown below:
+//
+//              31  30        23 22                                 0
+//             +-----------------------------------------------------+
+//             | s |      e     |                 f                  |
+//             +-----------------------------------------------------+
+//
+//             Value = (-1)^s * 2^(e-127) * 1.f
+//
+//             where: e = 1 to 254, f = 0.000000000 to ~1.0
+//                    e = 0, f = 0, s = 0, Value = 0.0
+//                    e = 0 and f != 0 case cannot occur in IQmath
+//                    e = 255 case cannot occur in IQmath
+//
+//##### INTERNAL BEGIN #####
+//-----------------------------------------------------------------------------
+// Benchmark:
+//
+// Cycles = ??
+//
+//##### INTERNAL END #####
+//*****************************************************************************
+__PREAMBLE__
+//$ BEGIN_UNROLL _QQ_ 1 to 30
+//*****************************************************************************
+//
+// _IQ_QQ_toF
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_toF
+    __EXPORT__ _IQ_QQ_toF__THUMB_LABEL__
+_IQ_QQ_toF__LABEL__
+    //
+    // The only special case to cover is if the operand is zero.
+    // In this case, we simply return - r0 is already appropriately set.
+    //
+    cbz     r0, r0isZero_QQ_
+
+    //
+    // Prepare working register r1 with sign
+    // Take absolute value of input
+    //
+    ands    r1, r0, #0x80000000
+        it      mi
+        rsbmi   r0, r0, #0
+
+    //
+    // Prepare exponent portion in r3
+    // This is calculated as follows:
+    //    +127 per the definition from IEEE 754
+    //    +31-Q to compensate hidden shift from IQ
+    //    -r3 = the number of leading zeros
+    //
+    clz     r3, r0
+    rsb     r2, r3, #(127 + 31 - _QQ_)
+
+    //
+    // Prepare normalized mantissa.
+    //
+    lsl     r0, r0, r3
+    lsr     r0, r0, #8
+
+    //
+    // Insert exponent bits.
+    // This over-writes the extraneous leading 1 in bit 23
+    //
+    bfi     r0, r2, #23, #8
+
+    //
+    // OR Sign bit back into result.
+    //
+    orr     r0, r1, r0
+
+    //
+    // Return to the caller.
+    //
+r0isZero_QQ___LABEL__
+    bx      lr
+
+    //
+    // Make sure that the end of the section is word aligned.
+    //
+    __ALIGN__
+
+//$ END_UNROLL _QQ_
+    __END__

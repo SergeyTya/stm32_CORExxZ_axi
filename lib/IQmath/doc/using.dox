@@ -1,0 +1,286 @@
+//*****************************************************************************
+//
+// using.dox - Using IQmath documentation.
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+/*! \page using_chapter
+\latexonly
+\chapter{Using The IQmath Library}
+\jumptext{using_type}{IQmath Data Type}\\
+\jumptext{using_call_c}{Calling IQmath Functions From C}\\
+\jumptext{using_call_cpp}{Calling IQmath Functions From C++}\\
+\jumptext{using_global_q}{Selecting the GLOBAL\_Q Format}\\
+\jumptext{using_float}{Converting An IQmath Application To Floating-Point}\\
+\jumptext{using_groups}{IQmath Function Groups}
+\input{using_type}
+\input{using_call_c}
+\input{using_call_cpp}
+\input{using_global_q}
+\input{using_float}
+\input{using_groups}
+\endlatexonly
+*/
+
+/*! \page using_type IQmath Data Type
+The IQmath library uses a 32-bit fixed-point signed number (a ``long'' in C) as
+its basic data type.  The IQ format of this fixed-point number can range from
+IQ1 to IQ30, where the IQ format number indicates the number of fractional
+bits.  C typedefs are provided for the various IQ formats, and these IQmath
+data types should be used in preference to the underlying ``long'' data type to
+make it clear which variables are in IQ format.
+
+The following table provides the characteristics of the various IQ formats (the
+C type, the number of integer bits, the number of fractional bits, the smallest
+negative value that can be represented, the largest positive value that can be
+represented, and the smallest difference that can be represented):
+
+\latexonly
+\arrayrulewidth=1pt
+\begin{longtable}{|c|c|c|r|r|r|}
+\hline
+\multirow{2}{*}{\textbf{Type}}&\multicolumn{2}{c|}{\textbf{Bits}}&\multicolumn{2}{c|}{\textbf{Range}}&\multicolumn{1}{c|}{\multirow{2}{*}{\textbf{Resolution}}}\\
+\cline{2-5}
+&\textbf{Integer}&\textbf{Fractional}&\multicolumn{1}{c|}{\textbf{Min}}&\multicolumn{1}{c|}{\textbf{Max}}&\\
+\hline
+\endhead
+\texttt{\_iq30} &  2 & 30 &             -2 &             1.999 999 999 & 0.000 000 001\\
+\hline
+\texttt{\_iq29} &  3 & 29 &             -4 &             3.999 999 998 & 0.000 000 002\\
+\hline
+\texttt{\_iq28} &  4 & 28 &             -8 &             7.999 999 996 & 0.000 000 004\\
+\hline
+\texttt{\_iq27} &  5 & 27 &            -16 &            15.999 999 993 & 0.000 000 007\\
+\hline
+\texttt{\_iq26} &  6 & 26 &            -32 &            31.999 999 985 & 0.000 000 015\\
+\hline
+\texttt{\_iq25} &  7 & 25 &            -64 &            63.999 999 970 & 0.000 000 030\\
+\hline
+\texttt{\_iq24} &  8 & 24 &           -128 &           127.999 999 940 & 0.000 000 060\\
+\hline
+\texttt{\_iq23} &  9 & 23 &           -256 &           255.999 999 881 & 0.000 000 119\\
+\hline
+\texttt{\_iq22} & 10 & 22 &           -512 &           511.999 999 762 & 0.000 000 238\\
+\hline
+\texttt{\_iq21} & 11 & 21 &         -1,024 &         1,023.999 999 523 & 0.000 000 477\\
+\hline
+\texttt{\_iq20} & 12 & 20 &         -2,048 &         2,047.999 999 046 & 0.000 000 954\\
+\hline
+\texttt{\_iq19} & 13 & 19 &         -4,096 &         4,095.999 998 093 & 0.000 001 907\\
+\hline
+\texttt{\_iq18} & 14 & 18 &         -8,192 &         8,191.999 996 185 & 0.000 003 815\\
+\hline
+\texttt{\_iq17} & 15 & 17 &        -16,384 &        16,383.999 992 371 & 0.000 007 629\\
+\hline
+\texttt{\_iq16} & 16 & 16 &        -32,768 &        32,767.999 984 741 & 0.000 015 259\\
+\hline
+\texttt{\_iq15} & 17 & 15 &        -65,536 &        65,535.999 969 483 & 0.000 030 518\\
+\hline
+\texttt{\_iq14} & 18 & 14 &       -131,072 &       131,071.999 938 965 & 0.000 061 035\\
+\hline
+\texttt{\_iq13} & 19 & 13 &       -262,144 &       262,143.999 877 930 & 0.000 122 070\\
+\hline
+\texttt{\_iq12} & 20 & 12 &       -524,288 &       524,287.999 755 859 & 0.000 244 141\\
+\hline
+\texttt{\_iq11} & 21 & 11 &     -1,048,576 &     1,048,575.999 511 720 & 0.000 488 281\\
+\hline
+\texttt{\_iq10} & 22 & 10 &     -2,097,152 &     2,097,151.999 023 440 & 0.000 976 563\\
+\hline
+\texttt{\_iq9}  & 23 &  9 &     -4,194,304 &     4,194,303.998 046 880 & 0.001 953 125\\
+\hline
+\texttt{\_iq8}  & 24 &  8 &     -8,388,608 &     8,388,607.996 093 750 & 0.003 906 250\\
+\hline
+\texttt{\_iq7}  & 25 &  7 &    -16,777,216 &    16,777,215.992 187 500 & 0.007 812 500\\
+\hline
+\texttt{\_iq6}  & 26 &  6 &    -33,554,432 &    33,554,431.984 375 000 & 0.015 625 000\\
+\hline
+\texttt{\_iq5}  & 27 &  5 &    -67,108,864 &    67,108,863.968 750 000 & 0.031 250 000\\
+\hline
+\texttt{\_iq4}  & 28 &  4 &   -134,217,728 &   134,217,727.937 500 000 & 0.062 500 000\\
+\hline
+\texttt{\_iq3}  & 29 &  3 &   -268,435,456 &   268,435,455.875 000 000 & 0.125 000 000\\
+\hline
+\texttt{\_iq2}  & 30 &  2 &   -536,870,912 &   536,870,911.750 000 000 & 0.250 000 000\\
+\hline
+\texttt{\_iq1}  & 31 &  1 & -1,073,741,824 & 1,073,741,823.500 000 000 & 0.500 000 000\\
+\hline
+\end{longtable}
+\endlatexonly
+
+In addition to these specific IQ format types, there is an addition type that
+corresponds to the <tt>GLOBAL_Q</tt> format.  This is <tt>_iq</tt>, and it
+matches one of the above IQ formats (based on the setting of
+<tt>GLOBAL_Q</tt>).
+*/
+
+/*! \page using_call_c Calling IQmath Functions From C
+In order to call an IQmath function from C (or from C++ using the normal C
+bindings), the IQmath C header file (<tt>IQmath/IQmathLib.h</tt>) must be
+included.  Then, the <tt>_iq</tt> and <tt>_iqN</tt> data types, along with the
+IQmath functions can be used by the application.
+
+As an example, the following code performs some simple arithmetic in IQ24
+format:
+
+\code
+    #include "IQmath/IQmathLib.h"
+
+    int
+    main(void)
+    {
+        _iq24 X, Y, Z;
+
+        X = _IQ24(1.0);
+        Y = _IQ24(7.0);
+
+        Z = _IQ24div(X, Y);
+    }
+\endcode
+*/
+
+/*! \page using_call_cpp Calling IQmath Functions From C++
+In C++, the <tt>_iq</tt> type becomes the <tt>iq</tt> class, allowing for
+operator overloading of operations such as multiply and divide.  To access the
+library from C++, the IQmath C++ header file (<tt>IQmath/IQmathCPP.h</tt>) must
+be included after the IQmath C header file has been included.  Then, call the
+functions using the <tt>iq</tt> and <tt>iqN</tt> classes along with the C++
+functions, which have the leading underscore removed and the math operations
+overloaded.  For example:
+
+\latexonly
+\arrayrulewidth=1pt
+\begin{longtable}[c]{|l|l|l|}
+\hline
+\textbf{C Code}&\textbf{C++ Code}&\textbf{Note}\\
+\hline
+\endhead
+\texttt{\_iq}, \texttt{\_iqN}&\texttt{iq}, \texttt{iqN}&IQ data types\\
+\hline
+\texttt{\_IQ(A)}, \texttt{\_IQN(A)}&\texttt{IQ(A)}, \texttt{IQN(A)}&Convert float to IQ\\
+\hline
+\texttt{\_IQdiv(A, B)}&\texttt{A / B}&Division\\
+\hline
+\texttt{\_IQsqrt(A)}&\texttt{IQsqrt(A)}&Square root\\
+\hline
+\end{longtable}
+\endlatexonly
+
+As an example, the following code is equivalent to the C example provided
+above, but using the C++ functions:
+
+\code
+    #include "IQmath/IQmathLib.h"
+    #include "IQmath/IQmathCPP.h"
+
+    int
+    main(void)
+    {
+        iq24 X, Y, Z;
+
+        X = IQ24(1.0);
+        Y = IQ24(7.0);
+
+        Z = X / Y;
+    }
+\endcode
+*/
+
+/*! \page using_global_q Selecting The GLOBAL_Q Format
+Numerical precision and dynamic range requirements vary considerably from one
+application to another.  The IQmath library provides a <tt>GLOBAL_Q</tt> format
+(using the <tt>_iq</tt> data type) that an application can use to perform its
+computations in a generic IQ format which can be changed at compile time.  An
+application written using the <tt>GLOBAL_Q</tt> format can be changed from one
+IQ format to another by simply changing the <tt>GLOBAL_Q</tt> value and
+recompiling, allowing the precision and performance effects of different IQ
+formats to be easily measured and evaluated.
+
+The default <tt>GLOBAL_Q</tt> format is IQ24.  This can be easily overridden in
+one of two ways:
+
+<ul>
+<li>In the source file, the <tt>GLOBAL_Q</tt> format can be selected prior to
+including <tt>IQmath/IQmathLib.h</tt>.  The following example selects a
+<tt>GLOBAL_Q</tt> format of IQ8:
+
+\code
+    //
+    // Set GLOBAL_Q to 8 prior to including IQmathLib.h.
+    //
+    #define GLOBAL_Q                8
+    #include "IQmath/IQmathLib.h"
+\endcode
+<li>In the project file, add a predefined value for <tt>GLOBAL_Q</tt> for the
+entire project.  The method to add a predefined value varies from tool chain to
+tool chain.
+</ul>
+
+The first method allows different modules in the application to have different
+<tt>GLOBAL_Q</tt> values, while the second method changes the <tt>GLOBAL_Q</tt>
+value for the entire application.  The method that is most appropriate varies
+from application to application.
+*/
+
+/*! \page using_float Converting An IQmath Application To Floating-Point
+An IQmath application can be easily converted to use floating-point math
+instead of IQmath.  <tt>MATH_TYPE</tt> selects the type of math to use; it can
+have one of two values:
+
+- <tt>IQ_MATH</tt> - the default value, which performs all IQmath functions
+  using fixed-point arithmetic in the IQmath library.
+
+- <tt>FLOAT_MATH</tt> - which provides stubs for all the IQmath functions
+  causing the arithmetic to be done in floating-point using the tool chain's C
+  and math library.
+
+By changing the definition of <tt>MATH_TYPE</tt> to <tt>FLOAT_MATH</tt>, all
+the IQmath calls are replaced by their floating-point equivalents.  This change
+can be easily made in one of two ways:
+
+<ul>
+<li>In the source file, the <tt>MATH_TYPE</tt> can be selected prior to
+including <tt>IQmath/IQmathLib.h</tt>.  The following example selects
+floating-point math:
+
+\code
+    //
+    // Select floating-point math.
+    //
+    #define MATH_TYPE               FLOAT_MATH
+    #include "IQmath/IQmathLib.h"
+\endcode
+<li>In the project file, add a predefined value for <tt>MATH_TYPE</tt> for the
+entire project.  The method to add a predefined value varies from tool chain to
+tool chain.
+</ul>
+
+The first method allows different modules in the application to use different
+math types, while the second method changes the math type for the entire
+application.  The method that is most appropriate varies from application to
+application.
+*/
+
+/*! \page using_groups IQmath Function Groups
+The IQmath routines are organized into five groups:
+
+- Format conversion functions - methods to convert numbers to and from the
+  various IQ formats.
+
+- Arithmetic functions - methods to perform basic arithmetic on IQ numbers
+  (addition, subtaction, multiplication, division).
+
+- Trigonometric functions - methods to perform trigonometric functions on IQ
+  numbers (sin, cos, atan, and so on).
+
+- Mathematical functions - methods to perform advanced arithmetic on IQ numbers
+  (square root, \latexonly e$^{x}$\endlatexonly, and so on).
+
+- Miscellaneous - miscellaneous methods that operate on IQ numbers (saturation
+  and absolute value).
+
+In the chapters that follow, the methods in each of these groups is covered in
+detail.
+*/

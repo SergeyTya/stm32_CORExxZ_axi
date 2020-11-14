@@ -1,0 +1,194 @@
+//*****************************************************************************
+//
+// IQisqrt.S - Fixed point inverse square root
+//
+// Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+// TI Information - Selective Disclosure
+//
+//*****************************************************************************
+
+//*****************************************************************************
+//
+// Function:   _IQNisqrt
+//
+//*****************************************************************************
+//
+// C Usage:    extern long _IQNisqrt(long X); // with saturation and rounding
+//
+//-----------------------------------------------------------------------------
+//
+// On Entry:   r0     = Val in IQ format
+//
+// Regs Used:  XAR7, XAR6, XAR5, XAR4
+//             XT, P, XAR0
+//
+// On Exit:    r0     = 1/sqrt(X) result in IQ format
+//             r0     = 0 if input is -ve or 0
+//             r0     = max value "0x7FFFFFFF" if result saturates
+//
+// Q range:    30 to 1
+//
+//-----------------------------------------------------------------------------
+//
+// Algorithm:  The procedure for calculating "Y = 1/sqrt(X)" is as follows:
+//
+//      Step 1)  Normalize input to be Q32 (1.0 0.5)
+//               This guarantees the result to be in the range of (2.0 1.0)
+//
+//      Step 2)  Obtain initial estimate from "_IQisqrtTable"
+//               using the upper 9-bits of the normalized value.
+//
+//      Step 3) Use Newton-Raphson algorithm to improve accuracy.
+//              Repeat following equation two times. First iteration
+//              gives 16-bit accuracy. Second iteration gives 32-bit
+//              accuracy:
+//
+//                     Y(n+1) = Yn*(1.5 - Yn*Yn*V/2)
+//
+//                     Yn = 1/sqrt(V)
+//
+//             Step 4) Denormalize result, round and saturate:
+//
+//                     Y = Yn / sqrt(2^n)
+//
+//-----------------------------------------------------------------------------
+//
+// Benchmark:
+//
+//  Q <= 20, L is even : 57
+//  Q <= 20, L is odd  : 63
+//  Q >  20, L is even : 59
+//  Q >  20, L is odd  : 65
+//  Negative or Zero   : 19
+//  Overflow           : 17
+//
+//*****************************************************************************
+__PREAMBLE__
+//*****************************************************************************
+//
+// The isqrt table is used.
+//
+//*****************************************************************************
+    __IMPORT__ isqrt_table
+
+//$ BEGIN_UNROLL _QQ_ 1 to 30
+//*****************************************************************************
+//
+// _IQ_QQ_isqrt
+//
+//*****************************************************************************
+    __SECTION__ _IQ_QQ_isqrt
+    __EXPORT__ _IQ_QQ_isqrt__THUMB_LABEL__
+_IQ_QQ_isqrt__LABEL__
+    //
+    // Normalize Input to (1.0 0.5) in Q32
+    // If the input is zero or negative, bail out early
+    // If the output will overflow, bail out early.  Some values of Q can not
+    // overflow, so this escape is partially preprocessed.
+    //
+    clz     r3, r0
+    and     r2, r3, #0x1F
+    cbz     r2, isqrt_neg_or_zero_QQ_
+#if _QQ_ > 20
+    cmp     r3, #94-3*_QQ_
+    bcs     isqrt_will_overflow_QQ_
+#endif
+    lsl     r0, r0, r3
+
+    //
+    // Table Lookup for Initial Estimate
+    // Uses  the top 9 actual bits as index
+    // The top bit (#10) is ignored, because it is always one.  This is done
+    // with the -0x800.  (0x200 is 10th bit, shift up two for 4 byte words).
+    //
+    lsr     r2, r0, #(32 - 10)
+    ldr     r1, isqrt_table__QQ_
+    ldr     r1, [r1, r2, lsl #2]
+
+    //
+    // Newton Raphson Iteration  #1
+    // 11-17 Cycles
+    // r0 is Q32, r1 is Q31
+    //
+    // r2 = Yn * N (Q31)
+    //
+    umull   r12, r2, r0, r1
+
+    //
+    // r2 = Yn * Yn * N /2 (Q31)
+    //
+    umull   r12, r2, r2, r1
+
+    //
+    // r2 = 1.5- Yn * Yn * N /2 (Q31)
+    //
+    rsb     r2, r2, #0xC0000000
+
+    //
+    // r1 = Yn * (1.5- Yn * Yn * N /2) (Q31)
+    //
+    umull   r12, r1, r2, r1
+    lsl     r1, r1, #1
+
+    //
+    // Newton Raphson Iteration  #2
+    // 11-17 Cycles
+    //
+    umull   r12, r2, r0, r1
+    umull   r12, r2, r2, r1
+    rsb     r2, r2, #0xC0000000
+    umull   r12, r0, r2, r1
+    lsl     r0, r0, #1
+
+    //
+    // Prepare to Denormalize result
+    // r3 stores the necessary shift.
+    //
+    rsb     r3, r3, #(94 - (3 * _QQ_))
+    asrs    r3, r3, #1
+
+    //
+    // Correct by sqrt(2) if carry bit is set
+    // This is due to the normalization to (1.0 0.5) instead of (1.0 0.25)
+    //
+    itt     cs
+        ldrcs   r2, sqrt_half__QQ_
+        umullcs r1, r0, r2, r0
+
+    //
+    // Actually denormalize per above preparation
+    // Round result and prevent overflow
+    //
+    lsrs    r0, r0, r3
+    adcs    r0, r0, #0
+    it      mi
+        mvnmi   r0, #0x80000000
+
+    //
+    // Return to the caller.
+    //
+    bx      lr
+
+    //
+    // Returns 0 if the input value is negative or zero
+    //
+isqrt_neg_or_zero_QQ___LABEL__
+    mov     r0, #0
+    bx      lr
+#if _QQ_ > 20
+isqrt_will_overflow_QQ___LABEL__
+    mvn     r0, #0x80000000
+    bx      lr
+#endif
+
+    //
+    // The literal pool.
+    //
+    __LITERALS__
+isqrt_table__QQ___LABEL__
+    __WORD__ isqrt_table - 0x800
+sqrt_half__QQ___LABEL__
+    __WORD__ 0xb504f334         // sqrt(1/2) in Q32
+
+//$ END_UNROLL _QQ_
+    __END__

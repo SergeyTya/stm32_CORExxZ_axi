@@ -1,0 +1,48 @@
+#******************************************************************************
+#
+# config.in - Configuration information for the IQmath library.
+#
+# Copyright (c) 2010 Texas Instruments Incorporated.  All rights reserved.
+# TI Information - Selective Disclosure
+#
+#******************************************************************************
+
+PREAMBLE=if [ -f gen_source.pl ]; then perl gen_source.pl; fi
+POSTAMBLE=if [ -f Makefile.lmi ]; then make -f Makefile.lmi; fi
+LIBRARY=yes
+TARGET=IQmathLib
+GUI_TARGET=IQmathLib
+USE_TARGET_NAMES=1
+DESC=IQmath library
+ROOT=..
+COPYRIGHT=2010
+VPATH=gnu
+SRC=./atoIQN.c
+SRC+= ./IQNtoa.c
+SRC+= ./ti/IQNasin.S
+SRC+= ./ti/IQNatan2.S
+SRC+= ./ti/IQNatan2PU.S
+SRC+= ./ti/IQNcos.S
+SRC+= ./ti/IQNcosPU.S
+SRC+= ./ti/IQNdiv.S
+SRC+= ./ti/IQNexp.S
+SRC+= ./ti/IQNexp2.S
+SRC+= ./ti/IQNfrac.S
+SRC+= ./ti/IQNint.S
+SRC+= ./ti/IQNisqrt.S
+SRC+= ./ti/IQNmag.S
+SRC+= ./ti/IQNmpy.S
+SRC+= ./ti/IQNmpyI32frac.S
+SRC+= ./ti/IQNmpyI32int.S
+SRC+= ./ti/IQNrmpy.S
+SRC+= ./ti/IQNrsmpy.S
+SRC+= ./ti/IQNsin.S
+SRC+= ./ti/IQNsinPU.S
+SRC+= ./ti/IQNsqrt.S
+SRC+= ./ti/IQNtoD.S
+SRC+= ./ti/IQNtoF.S
+SRC+= ./ti/IQtables.S
+SRC+= ./ti/IQxmpy.S
+CR_EXCLUDE={(iar|keil|ti)}
+CR_EXCLUDE_INT={(templates|IQtest)}
+CS_EXCLUDE=*.pl|*.in|iar|IQtest|keil|templates|ti
