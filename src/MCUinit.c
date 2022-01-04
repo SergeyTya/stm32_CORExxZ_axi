@@ -15,6 +15,9 @@
 void Uart_config();
 
 
+#define MCU_CLOCK 72000000
+#define PWM_FREQ      8000
+
 
 static void NVIC_Configuration(void)
 {
@@ -101,82 +104,44 @@ static void SetSysClockTo72(void)
   }
 };
 
-static void TIM3_config(){
+static void TIM1_config(){
 
 	TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
-	TIM_OCInitTypeDef  TIM_OCInitStructure;
+	TIM_OCInitTypeDef        TIM_OCInitStructure;
+	TIM_BDTRInitTypeDef      TIM_BDTRInitStructure;
 	GPIO_InitTypeDef GPIO_InitStructure;
 
-	uint16_t CCR1_Val = 333;
-	uint16_t CCR2_Val = 249;
-	uint16_t CCR3_Val = 166;
-	uint16_t CCR4_Val = 83;
-	uint16_t PrescalerValue = 0;
+	RCC_APB1PeriphClockCmd(RCC_APB2Periph_TIM1, ENABLE);
 
+	TIM_DeInit(TIM1);
 
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
+	/* Time base configuration */
 
-	  /* -----------------------------------------------------------------------
-	    TIM3 Configuration: generate 4 PWM signals with 4 different duty cycles:
-	    The TIM3CLK frequency is set to SystemCoreClock (Hz), to get TIM3 counter
-	    clock at 24 MHz the Prescaler is computed as following:
-	     - Prescaler = (TIM3CLK / TIM3 counter clock) - 1
-	    SystemCoreClock is set to 72 MHz for Low-density, Medium-density, High-density
-	    and Connectivity line devices and to 24 MHz for Low-Density Value line and
-	    Medium-Density Value line devices
+	TIM_TimeBaseStructInit(TIM_OCInitStructure);
+	TIM_TimeBaseStructure.TIM_Period = (uint16_t) (SystemCoreClock / 2* PWM_FREQ);
+	TIM_TimeBaseStructure.TIM_Prescaler = 0;
+	TIM_TimeBaseStructure.TIM_ClockDivision = 0;
+	TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_CenterAligned1;
+	TIM_TimeBaseStructure.TIM_RepetitionCounter = 0; // Counter event prescaler
+	TIM_TimeBaseInit(TIM1, &TIM_TimeBaseStructure);
 
-	    The TIM3 is running at 36 KHz: TIM3 Frequency = TIM3 counter clock/(ARR + 1)
-	                                                  = 24 MHz / 666 = 36 KHz
-	    TIM3 Channel1 duty cycle = (TIM3_CCR1/ TIM3_ARR)* 100 = 50%
-	    TIM3 Channel2 duty cycle = (TIM3_CCR2/ TIM3_ARR)* 100 = 37.5%
-	    TIM3 Channel3 duty cycle = (TIM3_CCR3/ TIM3_ARR)* 100 = 25%
-	    TIM3 Channel4 duty cycle = (TIM3_CCR4/ TIM3_ARR)* 100 = 12.5%
-	  ----------------------------------------------------------------------- */
-	  /* Compute the prescaler value */
-	  PrescalerValue = (uint16_t) (72000000 / 24000000) - 1;
-	  /* Time base configuration */
-	  TIM_TimeBaseStructure.TIM_Period = 665;
-	  TIM_TimeBaseStructure.TIM_Prescaler = PrescalerValue;
-	  TIM_TimeBaseStructure.TIM_ClockDivision = 0;
-	  TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+	/* Timer channel configuration */
 
-	  TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
+	/* Channel Configuration in PWM mode */
+	TIM_OCStructInit(TIM_OCInitStructure);
+	TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1; // OC1M - register
+	TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
+	TIM_OCInitStructure.TIM_OutputNState = TIM_OutputNState_Enable;
+	TIM_OCInitStructure.TIM_Pulse = 0; //CCR
+	TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
 
-	  /* PWM1 Mode configuration: Channel1 */
-	  TIM_OCInitStructure.TIM_OCMode = TIM_OCMode_PWM1;
-	  TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-	  TIM_OCInitStructure.TIM_Pulse = CCR1_Val;
-	  TIM_OCInitStructure.TIM_OCPolarity = TIM_OCPolarity_High;
+	TIM_OC1Init(TIM1, &TIM_OCInitStructure);
+	TIM_OC2Init(TIM1, &TIM_OCInitStructure);
+	TIM_OC2Init(TIM1, &TIM_OCInitStructure);
 
-	  TIM_OC1Init(TIM3, &TIM_OCInitStructure);
+	TIM_BDTRStructInit(TIM_BDTRInitStructure);
+	TIM_BDTRInitStructure.TIM_AutomaticOutput
 
-	  TIM_OC1PreloadConfig(TIM3, TIM_OCPreload_Enable);
-
-	  /* PWM1 Mode configuration: Channel2 */
-	  TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-	  TIM_OCInitStructure.TIM_Pulse = CCR2_Val;
-
-	  TIM_OC2Init(TIM3, &TIM_OCInitStructure);
-
-	  TIM_OC2PreloadConfig(TIM3, TIM_OCPreload_Enable);
-
-	  /* PWM1 Mode configuration: Channel3 */
-	  TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-	  TIM_OCInitStructure.TIM_Pulse = CCR3_Val;
-
-	  TIM_OC3Init(TIM3, &TIM_OCInitStructure);
-
-	  TIM_OC3PreloadConfig(TIM3, TIM_OCPreload_Enable);
-
-	  /* PWM1 Mode configuration: Channel4 */
-	  TIM_OCInitStructure.TIM_OutputState = TIM_OutputState_Enable;
-	  TIM_OCInitStructure.TIM_Pulse = CCR4_Val;
-
-	  TIM_OC4Init(TIM3, &TIM_OCInitStructure);
-
-	  TIM_OC4PreloadConfig(TIM3, TIM_OCPreload_Enable);
-
-	  TIM_ARRPreloadConfig(TIM3, ENABLE);
 
 	  /* TIM3 enable counter */
 	 TIM_Cmd(TIM3, ENABLE);
@@ -191,25 +156,6 @@ static void TIM3_config(){
 	  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 	  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOF, ENABLE);
 	  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
-
-
-	//   /* GPIOA Configuration:TIM3 Channel1, 2, 3 and 4 as alternate function push-pull */
-	//   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_6 | GPIO_Pin_7;
-	//   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-	//   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-
-	//   GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-	   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1;
-	   GPIO_Init(GPIOB, &GPIO_InitStructure);
-
-	   /* GPIOA Configuration:TIM3 Channel1, 2, 3 and 4 as alternate function push-pull */
-	  	   GPIO_InitStructure.GPIO_Pin = GPIO_Pin_13;
-	  	   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	  	   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-
-	  	   GPIO_Init(GPIOB, &GPIO_InitStructure);
-
 
 
 }
